@@ -19,9 +19,9 @@ async function setup({people=96,speed=2,configure=''}={}){
  });
  run(context,inline[0][2]);run(context,logistics);
  await run(context,`(async()=>{
-  VIEW.draw=()=>{};drawLogisticsCalculation=()=>{};drawLogisticsPanels=()=>{};applyNodeStates=()=>{};
+  VIEW.draw=()=>{};drawLogisticsCalculation=()=>{};drawLogisticsPanels=()=>{};applyNodeStates=()=>{};syncLastMileCamera=()=>{};
   drawCtl=()=>{};drawFloat=()=>{};drawKpis=()=>{};updateClock=()=>{};enterStep=i=>{S.step=i;};
-  INCIDENT.villageReport.transferPeople=${people};S.cfg.speed=${speed};${configure}
+  INCIDENT.villageReport.shelteredPeople=${people};S.cfg.speed=${speed};${configure}
   S.incident.result=incidentResult();S.logistics=logisticsState();S.started=true;S.step=3;S.muted=true;
   prepareSupplyNeeds();allocateSupply();await planInitialRoutes();planDeliveryRoutes();await S.logistics.roadRoutesPending;buildCooperativeTasks();
   S.step=7;S.sim=8;
@@ -56,9 +56,15 @@ function report(context){
 
 (async()=>{
  let defaultReport;
- const expected={water:576,food:288,vest:20,blanket:96,medical:2,light:4,boat:1};
+ const expected={water:576,food:288,hygiene:20,blanket:96,medical:2,light:4};
  for(const speed of [1,2,4]){
   const context=await setup({speed});
+ assert.equal(run(context,'S.incident.result.shelteredPeople'),96,'The opening report must use the village-reported, already-sheltered population');
+ assert.equal(run(context,"S.logistics.needs.some(m=>m.mat==='boat')"),false,'Rescue boats must be excluded from the dispatch list');
+ const villageList=run(context,'logisticsConfirmationMarkup(1,S.logistics)');
+ assert.match(villageList,/村委会上报/);assert.doesNotMatch(villageList,/AI|救生艇/);
+ const routePlan=run(context,'logisticsConfirmationMarkup(5,S.logistics)');
+ for(const detail of ['顺丰速运绵阳','中国邮政EMS','川B12V31','川B34121','DJI FlyCart 100','SC_MY_QS_A003_01','SC_MY_QS_A003_02','协同原因','山体滑坡'])assert.ok(routePlan.includes(detail),'Route confirmation should include '+detail);
   for(const [mat,qty] of Object.entries(expected))assert.equal(run(context,`S.logistics.needs.find(m=>m.mat==='${mat}').qty`),qty);
   const beforePause=run(context,'JSON.stringify([S.sim,S.logistics.onHandStock])');
   run(context,'S.paused=true;transportTick();S.paused=false;');
@@ -101,17 +107,17 @@ function report(context){
   assert.ok(t.estimatedStart>=latestEstimatedDroneEnd+4.999,t.id+' estimated schedule must preserve the second wave');
  }
  assert.equal(initialReport.tasks.filter(t=>t.mode==='uav'&&t.finalDelivery).flatMap(t=>t.manifest).filter(m=>m.mat==='medical').reduce((n,m)=>n+m.qty,0),2);
- assert.equal(initialReport.tasks.filter(t=>t.mode==='uav'&&t.finalDelivery).flatMap(t=>t.manifest).filter(m=>m.mat==='vest').reduce((n,m)=>n+m.qty,0),16);
+ assert.equal(initialReport.tasks.filter(t=>t.mode==='uav'&&t.finalDelivery).flatMap(t=>t.manifest).filter(m=>m.mat==='hygiene').reduce((n,m)=>n+m.qty,0),16);
 
- const alternate=await setup({configure:'LOGISTICS_CFG.inventory.P04.vest=0;LOGISTICS_CFG.inventory.P04.light=0;'});
- assert.equal(run(alternate,"S.tasks.filter(t=>t.finalDelivery&&t.mode==='uav').flatMap(t=>t.manifest).some(m=>m.mat==='vest'&&m.warehouse==='P03')"),true,'UAV loads must follow actual matching, including another warehouse');
+ const alternate=await setup({configure:'LOGISTICS_CFG.inventory.P04.hygiene=0;LOGISTICS_CFG.inventory.P04.light=0;'});
+ assert.equal(run(alternate,"S.tasks.filter(t=>t.finalDelivery&&t.mode==='uav').flatMap(t=>t.manifest).some(m=>m.mat==='hygiene'&&m.warehouse==='P03')"),true,'UAV loads must follow actual matching, including another warehouse');
  finish(alternate);assert.equal(run(alternate,'S.step'),9);
 
  const scaled=await setup({people:151});
  assert.ok(run(scaled,"new Set(S.tasks.filter(t=>t.mode==='team').map(t=>t.vehicleNo)).size<=LOGISTICS_CFG.teamFleet"),'Scaled dispatch must reuse no more than three rescue groups');
  finish(scaled);
  assert.equal(run(scaled,'S.step'),9);assert.ok(run(scaled,'matchedWarehouseIds().length')>=3);
- assert.equal(run(scaled,"S.logistics.delivered.boat"),2,'Grouped equipment quantities must round up');
+ assert.equal(run(scaled,'S.logistics.needs.length'),6,'The supply plan must not include rescue boats as transfer cargo');
 
  const shortage=await setup({configure:'Object.values(LOGISTICS_CFG.inventory).forEach(stock=>stock.medical=0);'});
  finish(shortage);
@@ -134,6 +140,6 @@ function report(context){
  assert.equal(run(tampered,'S.logistics.quantityCheck.ok'),false);
 
  if(process.argv[2])fs.writeFileSync(path.resolve(process.argv[2]),JSON.stringify(defaultReport,null,2)+'\n');
- console.log('PASS: first-wave UAV deliveries precede staff dispatch by 5+ sim minutes; 96-person dispatch at 1x/2x/4x; 7 materials conserved at every tick; replay, pause, dynamic warehouses, 151-person rounding, shortages, early dispatch and tampered-source/receipt checks.');
+ console.log('PASS: first-wave UAV deliveries precede staff dispatch by 5+ sim minutes; 96-person dispatch at 1x/2x/4x; 6 materials conserved at every tick; replay, pause, dynamic warehouses, 151-person rounding, shortages, early dispatch and tampered-source/receipt checks.');
  console.log(JSON.stringify({needs:expected,truckBatches:defaultReport.tasks.filter(t=>t.mode==='truck').length,lastMileBatches:defaultReport.tasks.filter(t=>t.finalDelivery).length,emptyUavFlights:defaultReport.tasks.filter(t=>t.preposition).length,uavFirstWave:wavePlan.uav.length,staffFollowup:wavePlan.teams.length,staffGapMin:+Math.min(...wavePlan.teams.map(t=>t.estimatedStart-latestEstimatedDroneEnd)).toFixed(1),quantityCheck:defaultReport.check.ok}));
 })().catch(error=>{console.error(error);process.exitCode=1;});

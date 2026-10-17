@@ -1046,7 +1046,7 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
 const SP={o:null,idx:0,timer:null,popup:null,homeParent:null,homeNextSibling:null};
 function mediaStop(){
  clearTimeout(SP.timer);SP.timer=null;
- document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video').forEach(v=>{try{v.pause();v.onended=null;v.onerror=null;}catch(e){}});
+ document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video,.logistics-lastmile-camera-layer video').forEach(v=>{try{v.pause();v.onended=null;v.onerror=null;}catch(e){}});
 }
 function renderMedia(i){
   mediaStop();
@@ -1322,10 +1322,9 @@ function havKm(a,b){
 }
 SPD.truck=0.7;SPD.uav=1.3; /* km/min：山区公路约42km/h，物流无人机约78km/h */
 /* 仅调整运输动画节奏；路线规划中的预计用时仍按原始运力参数展示。
-   提高无人机动画播放倍率，使空机前置和投送更早到达。
-   救援人员接驳原先按 1 倍速播放，12 批徒步负荷走完末端走廊需近 10 秒，现提高到 2 倍速。 */
-const TASK_PLAYBACK_RATE=Object.freeze({truck:1.5,uav:1/6,team:2});
-function taskPlaybackRate(task){return TASK_PLAYBACK_RATE[task?.mode]||1;}
+   干线车辆按 2.55 倍速播放；空载无人机前置到安全转运点按 0.5 倍速展示飞行过程，载货末端飞行保持原有慢速节奏。 */
+const TASK_PLAYBACK_RATE=Object.freeze({truck:2.55,uav:1/6,team:2});
+function taskPlaybackRate(task){return task?.preposition&&task?.mode==='uav' ? 0.5 :(TASK_PLAYBACK_RATE[task?.mode]||1);}
 function uavCallsign(task,index){
  const ordinal=Number(task?.vehicleNo)||S.tasks.slice(0,index+1).filter(t=>t.mode==='uav').length||index+1;
  return'SC_MY_QS_A003_'+String(ordinal).padStart(2,'0');
@@ -1357,7 +1356,7 @@ function taskPlaybackDuration(task){return Math.max(0,Number(task?.dur)||0)/task
 /* ============ 场景一：固定事件与研判状态机 ============ */
 const INCIDENT={
  type:'暴雨泥石流',epic:'T1',location:'北川羌族自治县 · 曲山镇 · 沙坝村',
- village:'沙坝村',monitoring:{},villageReport:{transferPeople:96,source:'曲山镇沙坝村村委会'},
+ village:'沙坝村',monitoring:{},villageReport:{shelteredPeople:96,source:'曲山镇沙坝村村委会'},
  zoom:15.2,radiusKm:.6,
  // 沙坝村附近公开参考点，用于村级演示定位，不作为行政边界。
  // 坐标来源：https://html.rhhz.net/dqwlxb/20101006.htm （图10）
@@ -1376,7 +1375,7 @@ const INCIDENT_CAMERA_VISIBLE_MS=INCIDENT_CAMERA_ROTATE_MS;
 function simulationSpeed(){return Math.max(.25,Number(S.cfg.speed)||1);}
 function simulationVoiceRate(base=1){return Math.min(10,Math.max(.1,base*simulationSpeed()));}
 function simulationVideoRate(video){
- const slowScene=!!video?.closest('#incidentCameraFloatingLayer')||SP.o===SCENES.disaster;
+ const slowScene=!!video?.closest('#incidentCameraFloatingLayer,.logistics-lastmile-camera-layer')||SP.o===SCENES.disaster;
  return (slowScene?INCIDENT_VIDEO_RATE:1)*simulationSpeed();
 }
 function applySimulationPlaybackSpeed(){
@@ -1385,7 +1384,7 @@ function applySimulationPlaybackSpeed(){
  activeSpeechUtterances.forEach(utterance=>{
   try{utterance.rate=simulationVoiceRate(utterance._simulationBaseRate||1);}catch(e){}
  });
- document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video').forEach(video=>{
+ document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video,.logistics-lastmile-camera-layer video').forEach(video=>{
   const rate=simulationVideoRate(video);
   try{video.defaultPlaybackRate=rate;video.playbackRate=rate;}catch(e){}
  });
@@ -1507,13 +1506,13 @@ window.addEventListener('resize',scheduleIncidentCameraConnectors,{passive:true}
 Object.assign(ALL[INCIDENT.epic],INCIDENT.coordinates,{name:'沙坝村·曲山镇',siteType:'village'});
 ALL[INCIDENT.epic].gcj=wgs2gcj(INCIDENT.coordinates.lng,INCIDENT.coordinates.lat);
 function incidentResult(){
- // 现场转移人数以村委会上报为准，作为后续物资保障基数。
- const reportedTransferPeople=INCIDENT.villageReport.transferPeople;
- const reportedTransferPeopleText=reportedTransferPeople+'人';
- return{reportedTransferPeople,reportedTransferPeopleText,
+ // 已安置群众人数以村委会上报为准，作为后续物资保障基数。
+ const shelteredPeople=INCIDENT.villageReport.shelteredPeople;
+ const shelteredPeopleText=shelteredPeople+'人';
+ return{shelteredPeople,shelteredPeopleText,
   casualties:'伤亡人数待现场核实，持续跟踪人员安全。',
   roads:'监测发现沙坝村周边山体发生滑坡，村口道路及村内低洼巷道有积水、冲淤，部分路段通行受阻。',
-  exposure:'村委会上报：现场被困需转移人数'+reportedTransferPeopleText+'；受灾范围：曲山镇沙坝村。'};
+  exposure:'村委会上报：'+shelteredPeopleText+'已就近安置完成，物资不足需调拨；受灾范围：曲山镇沙坝村。'};
 }
 function drawAssessment(){
  const a=S.incident,elapsed=a.elapsed,done=a.complete;
@@ -1522,17 +1521,17 @@ function drawAssessment(){
  const rows=[
   {label:'人员伤亡情况',at:11,value:result.casualties},
   {label:'被淹没道路及街道',at:15,value:result.roads},
-  {label:'村委会上报转移需求及范围',at:19,value:result.exposure}
+  {label:'村委会上报安置情况及物资需求',at:19,value:result.exposure}
  ];
  const card=document.getElementById('assessmentCard');
  card.classList.toggle('show',a.shown);card.classList.toggle('complete',done);
  card.innerHTML='<div class="assessment-head"><span>AI 灾情综合研判</span><span class="assessment-status">'+(done?'研判完成':'计算中')+'</span></div>'
   +'<div class="assessment-sub">'+INCIDENT.location+'<br>暴雨 · 泥石流 · 道路积水与冲毁</div>'
   +'<div class="assessment-monitoring">研判依据：现场监控、灾情监测及村委会现场报告</div>'
-  +(done?'<div class="assessment-result"><small>灾情综合研判结果</small><strong>曲山镇沙坝村</strong><span class="assessment-estimate">村委会上报：被困需转移 '+result.reportedTransferPeopleText+'</span><span>转移人数以村委会上报为准 · 道路影响持续跟踪。</span></div>':'')
+  +(done?'<div class="assessment-result"><small>灾情综合研判结果</small><strong>需紧急调拨应急物资</strong><span class="assessment-estimate">曲山镇沙坝村 · '+result.shelteredPeopleText+'已就近安置</span><span>村委会上报生活保障物资不足，建议立即启动应急物资调拨。</span></div>':'')
   +rows.map(row=>{const ready=done||elapsed>=row.at;return'<div class="assessment-row '+(ready?'ready':'pending')+'"><div class="assessment-row-head"><span>'+row.label+'</span><span class="assessment-row-state">'+(ready?'已汇总':'计算中')+'</span></div><div class="assessment-value">'+(ready?row.value:'正在分析监控画面与区域暴露情况')+'</div></div>';}).join('')
   +'<div class="assessment-progress"><i style="width:'+p+'%"></i></div><div class="assessment-meta"><span>'+(done?'综合研判已汇总':'监控识别 · 道路分析 · 影响范围研判')+'</span><span>'+p+'%</span></div>'
-  +'<div class="assessment-note">转移人数以村委会上报为准；人员伤亡情况待现场核实。</div>';
+  +'<div class="assessment-note">96人已就近安置完成；村委会上报物资不足，需要调拨。</div>';
 }
 function beginIncident(){
  const a=S.incident;
@@ -1555,11 +1554,11 @@ function incidentTick(){
   document.getElementById('incidentBanner').classList.add('complete');
   document.getElementById('incidentEyebrow').textContent='灾情综合研判完成 · 持续监测中';
   document.getElementById('incidentTitle').textContent='曲山镇沙坝村暴雨泥石流灾害';
-  document.getElementById('incidentDescription').textContent='村委会上报：现场被困'+a.result.reportedTransferPeopleText+'，需要转移。';
-  document.getElementById('mapStage').textContent='沙坝村 · 村委会上报'+a.result.reportedTransferPeopleText+'需转移';
-  setBusy('CMD',false);S.curCmd.CMD='沙坝村 · 村委会上报'+a.result.reportedTransferPeopleText+'需转移';
-  addLog('back','市级应急指挥系统','灾情综合研判完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报现场被困需转移<b>'+a.result.reportedTransferPeopleText+'</b>');
-  speak('灾情综合研判完成。'+INCIDENT.villageReport.source+'上报现场被困'+a.result.reportedTransferPeopleText+'，需要转移。受灾范围已聚焦曲山镇沙坝村。',true);
+  document.getElementById('incidentDescription').textContent='村委会上报：'+a.result.shelteredPeopleText+'已就近安置完成，物资不足需要调拨。';
+  document.getElementById('mapStage').textContent='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
+  setBusy('CMD',false);S.curCmd.CMD='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
+  addLog('back','市级应急指挥系统','灾情综合研判完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>');
+  speak('灾情综合研判完成。'+INCIDENT.villageReport.source+'上报，'+a.result.shelteredPeopleText+'已就近安置完成，当前物资不足，需要调拨。受灾范围已聚焦曲山镇沙坝村。',true);
   speakEmphasis('过去，靠人找信息；现在，让信息找人！',true);
   VIEW.focus(INCIDENT.epic);
   renderPanels();drawKpis();updateClock();
@@ -1581,7 +1580,7 @@ function leaveIncident(){
 }
 function setIncidentPaused(paused){
  S.incident.lastTick=performance.now();
- document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video').forEach(v=>{if(paused)v.pause();else v.play().then(()=>{
+ document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video,.logistics-lastmile-camera-layer video').forEach(v=>{if(paused)v.pause();else v.play().then(()=>{
   if(v.closest('#incidentCameraFloatingLayer'))scheduleIncidentCameraAdvance(incidentCameraVisibleDuration());
  }).catch(()=>{
   const retry=document.querySelector('#incidentCameraFloatingLayer .incident-camera-link-button');
@@ -1684,8 +1683,8 @@ const STEP_DEFS=[
    logs:[['down','市级应急指挥系统','实时监测触发：<b>北川曲山镇沙坝村暴雨泥石流灾害</b>，调取现场监控并接收村委会现场报告，核查受灾范围与道路受损情况']],
    focus:()=>S.cfg.epic,
    calc:()=>{buildScenario();applyNodeStates();beginIncident();}},
-  {active:['WH'],busy:[['WH','预判物资类型与数量']],
-   logs:[['down','仓储 / 网点资源系统',()=>'依据<b>村委会上报现场被困需转移'+(S.incident.result||incidentResult()).reportedTransferPeopleText+'</b>，计算首日救灾物资需求']],calc:()=>beginLogisticsStep(1)},
+  {active:['WH'],busy:[['WH','核对村委会上报物资清单']],
+   logs:[['down','仓储 / 网点资源系统',()=>'依据<b>村委会上报'+(S.incident.result||incidentResult()).shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>，核对首日物资清单']],calc:()=>beginLogisticsStep(1)},
   {active:['WH'],busy:[['WH','就近检索储备仓库']],
    logs:[['down','仓储 / 网点资源系统','查询沙坝村周边<b>100公里</b>内储备仓及社会仓库存，标记候选点位']],calc:()=>beginLogisticsStep(2)},
   {active:['WH'],busy:[['WH','调用仓储 / 网点资源系统匹配物资']],
@@ -1828,6 +1827,7 @@ function transportTick(){
    if(t.preposition){t.status='hold';S.routesDirty=true;logisticsTaskArrived(t);}
    else{t.status='done';logisticsTaskArrived(t);}
   }});
+ syncLastMileCamera(S.logistics);
   if(S.step===7&&S.tasks.some(t=>t.status==='done'&&t.finalDelivery!==false)&&!S.partialDone){S.partialDone=true;enterStep(8);}
  if(S.step>=8&&S.tasks.length&&S.tasks.every(t=>t.status==='done')&&S.step<9){if(confirmLogisticsQuantities())enterStep(9);else finish();}
  /* 运输阶段左侧系统卡与日志不变，仅刷新任务/浮卡/KPI/时钟，降低整页重排开销 */
@@ -1869,8 +1869,8 @@ function jumpAct(targetAct){
   if('speechSynthesis' in window){speechSynthesis.cancel();speechSynthesis.resume();}
   if(!a.complete){
    a.elapsed=Math.max(a.elapsed,INCIDENT.analysisAt);a.complete=true;a.result=incidentResult();
-   setBusy('CMD',false);S.curCmd.CMD='沙坝村 · 村委会上报'+a.result.reportedTransferPeopleText+'需转移';
-   addLog('back','市级应急指挥系统','灾情综合研判完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报现场被困需转移<b>'+a.result.reportedTransferPeopleText+'</b>');
+   setBusy('CMD',false);S.curCmd.CMD='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
+   addLog('back','市级应急指挥系统','灾情综合研判完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>');
   }
   S.paused=false;enterStep(1);return;
  }
@@ -1879,7 +1879,7 @@ function jumpAct(targetAct){
 /* ============ 实景场景定义（占位，用户提供素材后替换） ============ */
 const SCENES={
   disaster:{tag:'现场监控',title:'曲山镇沙坝村监控',desc:'',media:INCIDENT.media},
- demand:{tag:'物资需求',title:'集中安置点与受灾群众',desc:'受灾群众转移至安置点，按人数提出防护、被服、食品、医药等需求。',sceneKey:'集中安置点/受灾群众',
+ demand:{tag:'物资需求',title:'集中安置点与受灾群众',desc:'受灾群众已就近安置，村委会上报生活保障物资不足并提出调拨需求。',sceneKey:'集中安置点/受灾群众',
   want:'图片 2-3 张',media:[]},
  warehouse:{tag:'仓库管理方',title:'应急储备库与物资堆码',desc:'储备库按品类堆放，接调度指令后快速盘点、拣选、出库。',sceneKey:'储备库/货架/物资堆码',
   want:'图片 2-3 张',media:[]},
@@ -2040,7 +2040,7 @@ function drawCtl(){
  const secondAct=S.started&&S.step>0,prevDisabled=!S.started||!secondAct,nextDisabled=S.started&&secondAct;
   let h=S.started?'<div class="scenario-lock"><div class="eyebrow">固定事件场景 · 灾情监测与处置</div><strong>暴雨引发泥石流灾害</strong>'
    +'<div class="location">'+INCIDENT.location+'</div><div class="assessment-summary">'
-   +(S.incident.complete?'村委会上报：被困需转移 '+S.incident.result.reportedTransferPeopleText:'灾情综合研判中…')+'</div></div>':'';
+   +(S.incident.complete?S.incident.result.shelteredPeopleText+'已就近安置 · 村委会上报物资不足需调拨':'灾情综合研判中…')+'</div></div>':'';
  h+=`<div class="act-nav"><button type="button" id="btnPrevAct" ${prevDisabled?'disabled':''} title="回到灾情研判并重新开始">‹ 上一幕</button>
    <div class="act-nav-title">${secondAct?'物资调度与配送':'灾情触发与研判'}</div>
    <button type="button" id="btnNextAct" ${nextDisabled?'disabled':''} title="跳转至物资调度与配送">下一幕 ›</button></div>`;
