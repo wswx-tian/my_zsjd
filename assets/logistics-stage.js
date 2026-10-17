@@ -3,19 +3,19 @@ const ROAD_CLOSURE_ALERT_MS=1050;
 const LOGISTICS_CFG={
  warehouseIds:['P03','P05','P04','P01','P02','P08','P09','P10','P11','P12','P13'],searchRadiusKm:100,handoff:'X01',detour:'X02',
  waits:[0,12,8,8,8,9,9],truckKg:1500,uavKg:20,teamKg:240,teamFleet:3,
- speed:{truck:.7,uav:1.3,team:.067},loadMinutes:6,uavPriorityCaps:{vest:16,light:2},
+ speed:{truck:.7,uav:1.3,team:.067},loadMinutes:6,uavPriorityCaps:{hygiene:16,light:2},
  inventory:{
-  P03:{water:540,food:360,vest:40,blanket:90,medical:0,light:8,boat:1},
-  P05:{water:480,food:360,vest:40,blanket:90,medical:0,light:6,boat:1},
-  P04:{water:240,food:240,vest:20,blanket:50,medical:24,light:10,boat:0},
-  P01:{water:1000,food:1200,vest:180,blanket:360,medical:120,light:60,boat:8},
-  P02:{water:600,food:700,vest:100,blanket:200,medical:50,light:24,boat:4},
-  P08:{water:240,food:320,vest:36,blanket:72,medical:18,light:16,boat:1},
-  P09:{water:180,food:240,vest:30,blanket:60,medical:20,light:12,boat:1},
-  P10:{water:100,food:100,vest:40,blanket:50,medical:120,light:16,boat:0},
-  P11:{water:0,food:1200,vest:0,blanket:0,medical:0,light:0,boat:0},
-  P12:{water:100,food:160,vest:20,blanket:40,medical:12,light:8,boat:0},
-  P13:{water:100,food:200,vest:16,blanket:30,medical:4,light:8,boat:0}
+  P03:{water:540,food:360,hygiene:40,blanket:90,medical:0,light:8},
+  P05:{water:480,food:360,hygiene:40,blanket:90,medical:0,light:6},
+  P04:{water:240,food:240,hygiene:20,blanket:50,medical:24,light:10},
+  P01:{water:1000,food:1200,hygiene:180,blanket:360,medical:120,light:60},
+  P02:{water:600,food:700,hygiene:100,blanket:200,medical:50,light:24},
+  P08:{water:240,food:320,hygiene:36,blanket:72,medical:18,light:16},
+  P09:{water:180,food:240,hygiene:30,blanket:60,medical:20,light:12},
+  P10:{water:100,food:100,hygiene:40,blanket:50,medical:120,light:16},
+  P11:{water:0,food:1200,hygiene:0,blanket:0,medical:0,light:0},
+  P12:{water:100,food:160,hygiene:20,blanket:40,medical:12,light:8},
+  P13:{water:100,food:200,hygiene:16,blanket:30,medical:4,light:8}
  }
 };
 const LOGISTICS_ROAD_CACHE={"P05":{"distanceKm":74.5,"durationMin":79.5,"geo":[[104.55976,31.53016],[104.55863,31.53208],[104.56408,31.53542],[104.58016,31.53991],[104.59326,31.5371],[104.6028,31.53774],[104.60528,31.53729],[104.61643,31.55078],[104.62256,31.55443],[104.62568,31.56243],[104.63007,31.566],[104.63599,31.57567],[104.64228,31.58304],[104.64468,31.59358],[104.65476,31.59978],[104.65674,31.60161],[104.66409,31.6217],[104.67256,31.63137],[104.67141,31.6367],[104.6718,31.63876],[104.6752,31.64219],[104.684,31.65429],[104.68374,31.65703],[104.67921,31.66406],[104.68166,31.66878],[104.68478,31.67176],[104.68592,31.67385],[104.68582,31.6762],[104.68305,31.68157],[104.68313,31.68374],[104.68687,31.69186],[104.68985,31.7007],[104.68954,31.706],[104.69025,31.71093],[104.6936,31.72105],[104.69954,31.73252],[104.70647,31.73849],[104.7092,31.74321],[104.70597,31.74601],[104.70513,31.74829],[104.70563,31.75092],[104.71045,31.75945],[104.71044,31.76208],[104.70856,31.7655],[104.71027,31.76712],[104.70709,31.76794],[104.70452,31.77406],[104.69982,31.77736],[104.69668,31.77787],[104.69265,31.78048],[104.68571,31.77946],[104.67951,31.78401],[104.67524,31.78299],[104.67242,31.78416],[104.66996,31.78392],[104.66457,31.78195],[104.66182,31.78236],[104.65083,31.78152],[104.64036,31.78215],[104.63806,31.78137],[104.63538,31.78245],[104.63253,31.78232],[104.6286,31.78441],[104.61249,31.77978],[104.60188,31.77476],[104.59902,31.77415],[104.59004,31.77708],[104.58739,31.77932],[104.58439,31.78063],[104.58312,31.78397],[104.58676,31.79246],[104.58908,31.79465],[104.58621,31.79673],[104.58551,31.80047],[104.58748,31.80166],[104.58729,31.80485],[104.59237,31.811],[104.59202,31.81308],[104.58995,31.81544],[104.58947,31.81772],[104.59109,31.82058],[104.59119,31.82301],[104.59294,31.8241],[104.58964,31.82668],[104.58239,31.82897],[104.58135,31.83086],[104.58266,31.82981],[104.58016,31.8279],[104.57493,31.82807],[104.57263,31.82893],[104.57129,31.83053],[104.5687,31.83023],[104.56743,31.83233],[104.56865,31.83487],[104.5698,31.83536],[104.56826,31.8371],[104.56806,31.83972],[104.56635,31.84122],[104.5668,31.84302],[104.56053,31.84396],[104.55855,31.84543],[104.55897,31.84686],[104.5565,31.84746],[104.55511,31.84687],[104.55287,31.84422],[104.55146,31.84411],[104.55154,31.84698],[104.54754,31.84742],[104.54564,31.84834],[104.54518,31.85116],[104.54728,31.8558],[104.54399,31.85883],[104.54384,31.8604],[104.54209,31.8605],[104.54039,31.86154],[104.53981,31.86354],[104.54075,31.86668],[104.53918,31.86904],[104.53359,31.86671],[104.52856,31.86573],[104.52564,31.86587],[104.52168,31.86502],[104.5182,31.86535],[104.5134,31.86408],[104.50945,31.86474],[104.50396,31.86109],[104.49994,31.85976],[104.49648,31.85612],[104.49425,31.85491],[104.48923,31.85357],[104.48524,31.85143],[104.48052,31.85111],[104.46947,31.84023],[104.46595,31.83837],[104.45922,31.83619],[104.45609,31.83212],[104.45724,31.82832],[104.45616,31.82632]]},"P03":{"distanceKm":64,"durationMin":84.4,"geo":[[104.48451,31.631],[104.48648,31.63127],[104.48886,31.63317],[104.493,31.63355],[104.49335,31.6347],[104.49091,31.63442],[104.48769,31.6373],[104.48455,31.63788],[104.48266,31.63613],[104.48189,31.63716],[104.47881,31.63752],[104.47243,31.63481],[104.47111,31.63498],[104.46437,31.63286],[104.46301,31.6331],[104.46023,31.6318],[104.45277,31.63394],[104.45168,31.6333],[104.45038,31.63405],[104.44763,31.63377],[104.44684,31.63441],[104.44497,31.63308],[104.44182,31.63438],[104.44131,31.63692],[104.44215,31.64158],[104.44161,31.64283],[104.43423,31.64555],[104.4261,31.65082],[104.42404,31.65383],[104.42433,31.65684],[104.4316,31.6711],[104.43431,31.67263],[104.4402,31.67258],[104.44373,31.67403],[104.4536,31.68723],[104.46106,31.68753],[104.47108,31.68459],[104.4763,31.68587],[104.48366,31.68629],[104.49379,31.68969],[104.50212,31.6912],[104.50793,31.69309],[104.5133,31.69263],[104.52085,31.69496],[104.52233,31.69801],[104.52429,31.69996],[104.53105,31.7026],[104.53475,31.70285],[104.54137,31.70668],[104.54545,31.70819],[104.54688,31.70975],[104.5501,31.71111],[104.55213,31.7145],[104.55888,31.71805],[104.56022,31.72141],[104.57235,31.7305],[104.57558,31.73484],[104.57899,31.73614],[104.58193,31.7392],[104.5857,31.7396],[104.58876,31.74084],[104.59736,31.74784],[104.59785,31.74977],[104.59596,31.75395],[104.59503,31.75456],[104.59308,31.75974],[104.59144,31.76108],[104.59107,31.76255],[104.59388,31.76763],[104.59852,31.76596],[104.6003,31.76677],[104.59958,31.76974],[104.59794,31.77192],[104.60188,31.77476],[104.59872,31.77413],[104.59113,31.77644],[104.58739,31.77932],[104.58439,31.78063],[104.58323,31.78304],[104.58317,31.78436],[104.58676,31.79246],[104.58908,31.79465],[104.58621,31.79673],[104.58551,31.80047],[104.58748,31.80166],[104.58729,31.80485],[104.59237,31.811],[104.59202,31.81308],[104.58995,31.81544],[104.58947,31.81772],[104.59109,31.82058],[104.59119,31.82301],[104.59294,31.8241],[104.58964,31.82668],[104.58239,31.82897],[104.58135,31.83086],[104.58266,31.82981],[104.58016,31.8279],[104.57493,31.82807],[104.57263,31.82893],[104.57129,31.83053],[104.5687,31.83023],[104.56743,31.83233],[104.56865,31.83487],[104.5698,31.83536],[104.56826,31.8371],[104.56806,31.83972],[104.56635,31.84122],[104.5668,31.84302],[104.56053,31.84396],[104.55855,31.84543],[104.55897,31.84686],[104.5565,31.84746],[104.55511,31.84687],[104.55287,31.84422],[104.55146,31.84411],[104.55154,31.84698],[104.54754,31.84742],[104.54564,31.84834],[104.54518,31.85116],[104.54728,31.8558],[104.54399,31.85883],[104.54384,31.8604],[104.54209,31.8605],[104.54039,31.86154],[104.53981,31.86354],[104.54075,31.86668],[104.53946,31.86897],[104.53588,31.86807],[104.53359,31.86671],[104.52856,31.86573],[104.52564,31.86587],[104.52168,31.86502],[104.5182,31.86535],[104.5134,31.86408],[104.50945,31.86474],[104.50396,31.86109],[104.49994,31.85976],[104.49648,31.85612],[104.49425,31.85491],[104.48923,31.85357],[104.48524,31.85143],[104.48052,31.85111],[104.46947,31.84023],[104.46595,31.83837],[104.45922,31.83619],[104.45609,31.83212],[104.45724,31.82832],[104.45616,31.82632]]},"P04":{"distanceKm":42.1,"durationMin":56.6,"geo":[[104.71994,31.78],[104.71995,31.77817],[104.71451,31.77817],[104.71182,31.76977],[104.71008,31.76713],[104.70709,31.76794],[104.70452,31.77406],[104.69982,31.77736],[104.69668,31.77787],[104.69265,31.78048],[104.68571,31.77946],[104.67951,31.78401],[104.67524,31.78299],[104.67242,31.78416],[104.66996,31.78392],[104.66457,31.78195],[104.66182,31.78236],[104.65083,31.78152],[104.64036,31.78215],[104.63806,31.78137],[104.63538,31.78245],[104.6328,31.78224],[104.62825,31.78439],[104.62496,31.78299],[104.62011,31.78222],[104.61249,31.77978],[104.60188,31.77476],[104.59902,31.77415],[104.59113,31.77644],[104.58739,31.77932],[104.58439,31.78063],[104.58312,31.78397],[104.58676,31.79246],[104.58908,31.79465],[104.58621,31.79673],[104.58551,31.80047],[104.58748,31.80166],[104.58729,31.80485],[104.59237,31.811],[104.59202,31.81308],[104.58995,31.81544],[104.58947,31.81772],[104.59109,31.82058],[104.59119,31.82301],[104.59294,31.8241],[104.58964,31.82668],[104.58239,31.82897],[104.58135,31.83086],[104.58266,31.82981],[104.58016,31.8279],[104.57493,31.82807],[104.57263,31.82893],[104.57129,31.83053],[104.5687,31.83023],[104.56743,31.83233],[104.56865,31.83487],[104.5698,31.83536],[104.56826,31.8371],[104.56806,31.83972],[104.56635,31.84122],[104.5668,31.84302],[104.56053,31.84396],[104.55855,31.84543],[104.55897,31.84686],[104.5565,31.84746],[104.55511,31.84687],[104.55287,31.84422],[104.55146,31.84411],[104.55154,31.84698],[104.54754,31.84742],[104.54564,31.84834],[104.54518,31.85116],[104.54728,31.8558],[104.54399,31.85883],[104.54384,31.8604],[104.54209,31.8605],[104.54039,31.86154],[104.53981,31.86354],[104.54075,31.86668],[104.53918,31.86904],[104.53359,31.86671],[104.52856,31.86573],[104.52564,31.86587],[104.52168,31.86502],[104.5182,31.86535],[104.5134,31.86408],[104.50945,31.86474],[104.50396,31.86109],[104.49994,31.85976],[104.49648,31.85612],[104.49425,31.85491],[104.48923,31.85357],[104.48524,31.85143],[104.48052,31.85111],[104.46947,31.84023],[104.46595,31.83837],[104.45922,31.83619],[104.45609,31.83212],[104.45724,31.82832],[104.45616,31.82632]]}};
@@ -33,11 +33,10 @@ const LOGISTICS_CLOSED_ROAD={
 const SUPPLY_CATALOG=[
  {mat:'water',name:'饮用水',unit:'瓶',perPerson:6,kg:.55,rule:'首日每人3升，500mL/瓶，折合每人6瓶'},
  {mat:'food',name:'方便食品',unit:'份',perPerson:3,kg:.6,rule:'首日每人3份即食主餐'},
- {mat:'vest',name:'救生衣',unit:'件',perPerson:.2,kg:.8,rule:'按20%人员向上取整，供救援及分批转移周转使用'},
+ {mat:'hygiene',name:'应急卫生用品包',unit:'包',perPerson:.2,kg:.8,rule:'按每5人1包配置，含基础洗漱及卫生用品，保障临时安置期间基本卫生需求'},
  {mat:'blanket',name:'救灾毛毯',unit:'床',perPerson:1,kg:1.2,rule:'首日安置每人1床'},
  {mat:'medical',name:'急救医药包',unit:'包',perPerson:1/50,kg:3,rule:'按50人1包综合急救物资包配置，向上取整'},
- {mat:'light',name:'应急照明',unit:'套',perPerson:1/25,kg:3,rule:'按25人1套区域照明配置，向上取整'},
- {mat:'boat',name:'救生艇',unit:'条',perPerson:1/150,kg:55,rule:'150人以内配置1条便携充气式救生艇，用于分批转移周转'}
+ {mat:'light',name:'应急照明',unit:'套',perPerson:1/25,kg:3,rule:'按25人1套区域照明配置，向上取整'}
 ];
 const SUPPLY_BY_ID=Object.fromEntries(SUPPLY_CATALOG.map(m=>[m.mat,m]));
 SUPPLY_CATALOG.forEach(m=>MAT_NAME[m.mat]=m.name);MAT_NAME.mixed='综合保障物资';
@@ -70,6 +69,8 @@ function logisticsState(){return{
 };}
 function resetLogistics(){
  if(S.logistics){clearInterval(S.logistics.uiTimer);clearTimeout(S.logistics.confirmationTimer);clearInterval(S.logistics.confirmationCountdownTimer);clearTimeout(S.logistics.roadClosureAlertTimer);}
+ clearTimeout(lastMileCameraTimer);lastMileCameraTimer=0;lastMileCameraSelected=-1;
+ const lastMileLayer=document.getElementById('lastMileCameraLayer');if(lastMileLayer){lastMileLayer.classList.remove('show');lastMileLayer.querySelector('video')?.pause();if(lastMileLayer.dataset.headingAdjusted==='true'){const heading=document.querySelector('.logistics-heading');heading?.style.removeProperty('left');heading?.style.removeProperty('transform');heading?.style.removeProperty('width');}lastMileLayer.dataset.headingAdjusted='false';}
  S.logistics=null;document.body.classList.remove('logistics-scene','logistics-delivery','logistics-tasks-shown');
  document.getElementById('assessmentCard').classList.remove('logistics-calculation');
  document.getElementById('supplyPanel').innerHTML='';document.getElementById('logisticsHeading').innerHTML='';
@@ -78,7 +79,7 @@ function resetLogistics(){
 }
 function prepareSupplyNeeds(){
  const a=S.logistics;if(a.prepared)return;
- a.peopleCount=(S.incident.result||incidentResult()).reportedTransferPeople;
+ a.peopleCount=(S.incident.result||incidentResult()).shelteredPeople;
  a.needs=SUPPLY_CATALOG.map(m=>({...m,qty:Math.ceil(a.peopleCount*m.perPerson)}));
  a.remainingStock=JSON.parse(JSON.stringify(LOGISTICS_CFG.inventory));
  a.onHandStock=JSON.parse(JSON.stringify(LOGISTICS_CFG.inventory));
@@ -92,7 +93,7 @@ function prepareSupplyNeeds(){
   .filter(w=>w.distance<=LOGISTICS_CFG.searchRadiusKm).sort((a,b)=>a.distance-b.distance);
  a.prepared=true;
  S.demands[INCIDENT.epic]={mat:'mixed',items:a.needs,qty:a.needs.reduce((n,m)=>n+m.qty,0),unmet:a.needs.reduce((n,m)=>n+m.qty,0)};
- addLog('back','仓储 / 网点资源系统','依据村委会上报现场被困需转移<b>'+a.peopleCount+'人</b>，测算首日<b>'+a.needs.length+'类物资</b>，开始检索周边可调拨仓库');
+ addLog('back','仓储 / 网点资源系统','依据村委会上报<b>'+a.peopleCount+'人已就近安置、物资不足需调拨</b>，核对首日<b>'+a.needs.length+'类物资</b>并检索周边储备仓');
 }
 function matchedWarehouseIds(){return [...new Set(S.logistics?.allocations.map(x=>x.warehouse)||[])];}
 /* 无人机起降点清单：所有名称含“无人机起降点”的枢纽点（含新增的曲山起降点）。 */
@@ -427,31 +428,42 @@ function packCargo(lines,capacity){
  }
  return batches;
 }
-function buildCooperativeTasks(){
- const a=S.logistics;if(a.tasksBuilt)return;
- planDeliveryRoutes();S.tasks=[];
- const truckIds={};let sequence=0,socialCarrierIndex=0,truckPlateIndex=0;
- function task(depot,target,mode,manifest,route,start,dependsOn=[],finalDelivery=true,estimatedStart=start){
-  const t={id:'L'+(++sequence),depot,target,mode,manifest,mat:'mixed',qty:manifest.reduce((n,m)=>n+m.qty,0),
-   via:[...route.via],edges:[...route.edges],geo:route.geo?[...route.geo]:null,dist:route.dist,dur:route.dur,start,estimatedStart,status:'wait',dependsOn,finalDelivery,
-   weight:cargoWeight(manifest),capacity:mode==='truck'?LOGISTICS_CFG.truckKg:mode==='uav'?LOGISTICS_CFG.uavKg:LOGISTICS_CFG.teamKg,
-   carrier:mode==='truck'?['顺丰速运绵阳','中国邮政EMS','交投物流'][socialCarrierIndex++%3]+'协同运力':mode==='uav'?'前置无人机分队':'应急人员接驳队',
-   licensePlate:mode==='truck'?TRUCK_PLATES[truckPlateIndex++%TRUCK_PLATES.length]:null};
-  S.tasks.push(t);return t;
- }
- for(const r of a.routes){
-  const batches=packCargo(a.allocations.filter(m=>m.warehouse===r.depot),LOGISTICS_CFG.truckKg);
-  if(batches.length>ALL[r.depot].trucks)throw new Error(ALL[r.depot].name+'可用车辆不足');
-  truckIds[r.depot]=batches.map(b=>task(r.depot,LOGISTICS_CFG.handoff,'truck',b,r,8,[],false).id);
- }
+function logisticsTruckAssignments(a){
+ const carriers=['顺丰速运绵阳','中国邮政EMS','交投物流'];let carrierIndex=0,plateIndex=0;
+ return a.routes.flatMap(route=>{
+  const batches=packCargo(a.allocations.filter(m=>m.warehouse===route.depot),LOGISTICS_CFG.truckKg);
+  if(batches.length>ALL[route.depot].trucks)throw new Error(ALL[route.depot].name+'可用车辆不足');
+  return batches.map(manifest=>({route,manifest,carrier:carriers[carrierIndex++%carriers.length]+'协同运力',licensePlate:TRUCK_PLATES[plateIndex++%TRUCK_PLATES.length]}));
+ });
+}
+function logisticsLastMileLoads(a){
  const pending=a.allocations.map(m=>({...m}));
  function take(mat,quantity){const out=[];for(const m of pending){if(m.mat!==mat)continue;const qty=Math.min(quantity,m.qty);if(qty){out.push({...m,qty});m.qty-=qty;quantity-=qty;}if(!quantity)break;}return out;}
  const urgent=[];
- for(const mat of ['vest','light','medical']){
+ for(const mat of ['hygiene','light','medical']){
   const allocated=a.allocations.filter(m=>m.mat===mat).reduce((n,m)=>n+m.qty,0),limit=LOGISTICS_CFG.uavPriorityCaps[mat]??allocated;
   urgent.push(...take(mat,Math.min(allocated,limit)));
  }
  const airLoads=[...new Set(urgent.map(m=>m.warehouse))].flatMap(id=>packCargo(urgent.filter(m=>m.warehouse===id),LOGISTICS_CFG.uavKg));
+ return{pending,airLoads};
+}
+function buildCooperativeTasks(){
+ const a=S.logistics;if(a.tasksBuilt)return;
+ planDeliveryRoutes();S.tasks=[];
+ const truckIds={};let sequence=0;
+function task(depot,target,mode,manifest,route,start,dependsOn=[],finalDelivery=true,estimatedStart=start,truckAssignment=null){
+  const t={id:'L'+(++sequence),depot,target,mode,manifest,mat:'mixed',qty:manifest.reduce((n,m)=>n+m.qty,0),
+   via:[...route.via],edges:[...route.edges],geo:route.geo?[...route.geo]:null,dist:route.dist,dur:route.dur,start,estimatedStart,status:'wait',dependsOn,finalDelivery,
+   weight:cargoWeight(manifest),capacity:mode==='truck'?LOGISTICS_CFG.truckKg:mode==='uav'?LOGISTICS_CFG.uavKg:LOGISTICS_CFG.teamKg,
+   carrier:mode==='truck'?truckAssignment.carrier:mode==='uav'?'前置无人机分队':'应急人员接驳队',
+   licensePlate:mode==='truck'?truckAssignment.licensePlate:null};
+  S.tasks.push(t);return t;
+ }
+ for(const assignment of logisticsTruckAssignments(a)){
+  const r=assignment.route;
+  (truckIds[r.depot]??=[]).push(task(r.depot,LOGISTICS_CFG.handoff,'truck',assignment.manifest,r,8,[],false,8,assignment).id);
+ }
+ const {pending,airLoads}=logisticsLastMileLoads(a);
  function dependencies(manifest){return [...new Set(manifest.flatMap(m=>truckIds[m.warehouse]||[]))];}
  function readyAt(ids,playback=true){
   const predecessors=S.tasks.filter(t=>ids.includes(t.id));
@@ -498,7 +510,7 @@ function completedTargets(){
 }
 function logisticsNarrationText(step){
  const a=S.logistics;
- if(step===1)return'依据村委会上报的转移人数，正在计算所需物资。';
+ if(step===1)return'村委会上报'+a.peopleCount+'人已就近安置、物资储备不足，正在核对调拨清单。';
  if(step===2)return'正在查询周边仓库库存，匹配所需物资。';
  if(step===3)return'已调用仓储/网点资源系统，按需求清单完成物资匹配，由'+matchedWarehouseIds().map(id=>ALL[id].name).join('、')+'协同供货。';
  if(step===4)return'已调用物流运输配送系统匹配并计算初始配送路线，正在核验沿线道路通行状态。';
@@ -527,13 +539,13 @@ function narrateLogisticsStep(step){
 }
 function logisticsConfirmationMarkup(step,a){
  if(step===1){
-  const displayOrder=['water','food','blanket','vest','medical','light','boat'];
+  const displayOrder=['water','food','blanket','hygiene','medical','light'];
   const needs=[...a.needs].sort((x,y)=>displayOrder.indexOf(x.mat)-displayOrder.indexOf(y.mat));
   const rows=needs.map(m=>'<div class="confirm-estimate-row"><div class="confirm-estimate-item"><b>'+m.name+'</b>'+(m.mat==='water'?'<small>500mL / 瓶</small>':'')+'</div>'
    +'<div class="confirm-estimate-rule">'+m.rule+'</div><div class="confirm-estimate-qty"><b>'+m.qty+'</b><span>'+m.unit+'</span></div></div>').join('');
-  return '<div class="confirm-estimate"><div class="confirm-estimate-summary"><b>已按村委会上报的'+a.peopleCount+'人转移需求核对并调整</b><small>物资数量估算与计算依据</small></div>'
-   +'<div class="confirm-estimate-head"><span>物资</span><span>估算依据</span><span>建议数量</span></div>'
-   +'<div class="confirm-estimate-rows">'+rows+'</div><div class="confirm-estimate-foot">救生衣、救生艇按分批转移周转配置；请核对后确认。</div></div>';
+  return '<div class="confirm-estimate"><div class="confirm-estimate-summary"><b>村委会上报：'+a.peopleCount+'人已就近安置，反映物资不足需调拨</b><small>村委会现场上报物资清单</small></div>'
+   +'<div class="confirm-estimate-head"><span>物资</span><span>保障标准</span><span>村委会上报物资量</span></div>'
+   +'<div class="confirm-estimate-rows">'+rows+'</div><div class="confirm-estimate-foot">请核对村委会上报物资清单及数量。</div></div>';
  }
  if(step===3){
   const shortages=a.needs.filter(m=>(a.unmet[m.mat]||0)>0);
@@ -543,17 +555,25 @@ function logisticsConfirmationMarkup(step,a){
   }).join('');
   return '<ul>'+rows+'</ul>'+(shortages.length?'<p class="confirm-shortage">库存缺口：'+shortages.map(m=>m.name+(a.unmet[m.mat]||0)+m.unit).join('、')+'</p>':'<p class="confirm-shortage ok">库存满足本次需求。</p>');
  }
- return '<ul>'+a.routes.map(r=>'<li><b>'+r.name+'</b> · '+(r.detoured?'S105绕行':'道路畅通')+'<br>'+r.dist.toFixed(1)+' km · 约 '+Math.ceil(r.dur)+' 分钟</li>').join('')+'</ul>';
+ const truckRows=logisticsTruckAssignments(a).map(dispatch=>'<li><b>'+dispatch.carrier.replace('协同运力','')+'</b><span>'+dispatch.licensePlate+'</span><small>'+ALL[dispatch.route.depot].name+' → 沙坝村安全转运点</small></li>').join('');
+ const lastMileLoads=logisticsLastMileLoads(a).airLoads,airCount=Math.max(2,lastMileLoads.length);
+ const urgent=Object.entries(lastMileLoads.flat().reduce((totals,m)=>{totals[m.mat]=(totals[m.mat]||0)+m.qty;return totals;},{})).map(([mat,qty])=>SUPPLY_BY_ID[mat].name+qty+SUPPLY_BY_ID[mat].unit).join('、');
+ const callsigns=Array.from({length:airCount},(_,i)=>uavCallsign({vehicleNo:i+1},i)).join('、');
+ return '<div class="confirm-route-list"><ul>'+a.routes.map(r=>'<li><div class="confirm-route-heading"><b>'+r.name+'</b><span class="confirm-route-status '+(r.detoured?'detour':'clear')+'">'+(r.detoured?'S105绕行':'道路畅通')+'</span></div><p>'+r.dist.toFixed(1)+' km <i>·</i> 约 '+Math.ceil(r.dur)+' 分钟</p></li>').join('')+'</ul></div>'
+  +'<div class="confirm-collaboration-grid"><section class="confirm-collaboration"><h3>干线运力协同</h3><p>运力中心协调顺丰、EMS等社会物流企业参与运输。</p><p class="confirm-reason"><b>社会运力调拨原因</b><strong class="confirm-reason-emphasis">本地应急运力不足，需补充社会运力保障。</strong></p><ul>'+truckRows+'</ul></section>'
+  +'<section class="confirm-collaboration"><h3>无人机协同</h3><p class="confirm-reason"><b>无人机协同原因</b><strong class="confirm-reason-emphasis">S105山体滑坡及道路阻塞影响车辆直达，由安全转运点跨越受阻路段投送急需物资'+(urgent?'（'+urgent+'）':'')+'。</strong></p><p class="confirm-unit-meta"><b>机型</b> DJI FlyCart 100 · '+airCount+'架</p><p class="confirm-unit-meta"><b>编号</b> '+callsigns+'</p></section></div>';
 }
 function openLogisticsConfirmation(step){
  const a=S.logistics;if(!a||a.confirmationPending!==null||a.confirmedStages.has(step))return;
  const modal=document.getElementById('stageConfirm');
  if(!modal){confirmLogisticsCheckpoint(step);return;}
  clearInterval(a.uiTimer);a.uiTimer=null;a.confirmationPending=step;
- modal.querySelector('.stage-confirm-dialog')?.classList.toggle('estimate-confirm-dialog',step===1);
+ const dialog=modal.querySelector('.stage-confirm-dialog');
+ dialog?.classList.toggle('estimate-confirm-dialog',step===1);
+ dialog?.classList.toggle('route-confirm-dialog',step===5);
  const config={
-  1:['物资预估确认','请核对本次首日物资预估清单。','仓储 / 网点资源系统 · AI物资估算 · 人工确认'],
-  3:['仓库匹配确认','请确认实际入选仓库及对应调拨物资。','仓储 / 网点资源系统 · AI仓库匹配 · 人工确认'],
+  1:['村委会上报物资清单','请核对村委会上报物资量。','村委会现场报告 · 人工确认'],
+  3:['物资调拨确认','请确认实际入选仓库及对应调拨物资。','仓储 / 网点资源系统 · AI仓库匹配 · 人工确认'],
   5:['配送路线确认','请确认道路阻断处理后的配送路线与时效。','物流运输配送系统 · AI路线测算 · 人工确认']
  }[step];
  document.getElementById('stageConfirmTitle').textContent=config[0];
@@ -664,8 +684,8 @@ function logisticsTick(){
 function logisticsRows(){
  const a=S.logistics,p=S.step,t=a.stageElapsed;
  if(p<=3)return[
-  {name:'村委会上报与保障需求匹配',done:p>1||t>=2,active:p===1&&t<2,body:'沙坝村 · 现场被困'+a.peopleCount+'人 · 需转移'},
-  {name:'预判物资类型及数量',done:p>1||t>=9,active:p===1&&t>=2,body:p>1||t>=9?a.needs.map(m=>m.name+m.qty+m.unit).join('、'):'正在根据监测结果测算物资类型与数量。'},
+  {name:'村委会上报安置情况与物资缺口',done:p>1||t>=2,active:p===1&&t<2,body:'沙坝村 · '+a.peopleCount+'人已就近安置 · 物资不足需调拨'},
+  {name:'整理首日物资清单与数量',done:p>1||t>=9,active:p===1&&t>=2,body:p>1||t>=9?a.needs.map(m=>m.name+m.qty+m.unit).join('、'):'正在按村委会上报情况和保障标准核对物资清单。'},
   {name:'就近检索物资储备仓',done:p>2,active:p===2,body:p<2?'检索周边可调拨库存':a.warehouses.slice(0,p===2?a.discovered:3).map(w=>ALL[w.id].name+' '+w.distance.toFixed(1)+'km').join('；')},
   {name:'调用仓储/网点资源系统匹配物资',done:p===3&&t>=3,active:p===3&&t<3,body:a.matched?a.needs.length+'类需求已核对，'+matchedWarehouseIds().length+'座仓库联合保障；'+(Object.values(a.unmet).some(q=>q>0)?'仍有缺口，需补充调拨。':'无库存缺口。'):'调用仓储/网点资源系统核对库存，按需求清单匹配物资。'}
  ];
@@ -685,29 +705,46 @@ function logisticsDeliverySyncMarkup(a){
  return'<div class="delivery-sync"><div class="delivery-sync-head"><span>配送结果自动回传</span><b>'+signed+'/'+finalTasks.length+' 批已签收</b></div>'
   +'<p>'+delivery+'</p><small class="delivery-sync-last">'+lastText+'</small>'+check+'</div>';
 }
+let logisticsAssessmentLayoutFrame=0;
+function scheduleLogisticsAssessmentLayout(){
+ if(logisticsAssessmentLayoutFrame)cancelAnimationFrame(logisticsAssessmentLayoutFrame);
+ logisticsAssessmentLayoutFrame=requestAnimationFrame(()=>{logisticsAssessmentLayoutFrame=0;layoutLogisticsAssessmentCard();});
+}
+function layoutLogisticsAssessmentCard(){
+ const a=S.logistics,card=document.getElementById('assessmentCard');
+ if(!a?.active||!card)return;
+ const leftPanel=document.querySelector('.panel-left')?.getBoundingClientRect();
+ const centerTop=document.querySelector('.center-zone')?.getBoundingClientRect().top||0;
+ const top=Math.max((leftPanel?.bottom||0)+12,centerTop);
+ card.style.left='12px';card.style.right='auto';card.style.top=top+'px';card.style.bottom='auto';
+ card.style.width='min(344px, calc(100vw - 24px))';
+ card.style.maxHeight=Math.max(150,innerHeight-top-14)+'px';
+}
+window.addEventListener('resize',scheduleLogisticsAssessmentLayout,{passive:true});
 function drawLogisticsCalculation(){
  const a=S.logistics;if(!a||!a.active)return;
  drawLogisticsHeading();
  const matching=S.step<=3,base=matching?1:4,progress=S.step>=7?100:Math.min(100,Math.floor(((S.step-base)+Math.min(1,a.stageElapsed/LOGISTICS_CFG.waits[S.step]))/3*100));
- const title=matching?'AI 物资匹配计算':'AI 路线规划计算';
+ const title=matching?'村委会上报物资清单核对':'AI 路线规划计算';
  const detoured=a.routes.filter(r=>r.detoured).length;
  const routeSummary=a.tasksBuilt?'公路＋无人机首批投送＋人员后续接力':S.step===4?(a.initialRoutesReady?'初始候选路线 · '+a.initialRoutes.length+'条':a.initialRoutesResolved?'初始路线数据不完整':'初始候选路线生成中'):a.planned?detoured+'条受影响路线经S105绕行':'道路通行状态核验中';
  const routeSummaryDetail=a.tasksBuilt?'首批约'+Math.ceil(a.firstArrival)+'分钟到村 · 全部约'+Math.ceil(a.lastArrival)+'分钟完成':S.step===4?(a.initialRoutesResolved&&!a.initialRoutesReady?'已展示可获取路线，继续核验通行状态。':'先生成初始路线，随后核验交通事故阻塞并重新规划。'):a.planned?'畅通线路保留原路，受影响线路按仓库物资分配方案绕行。':'正在逐段核验交通事故阻塞路段。';
  const rows=logisticsRows();
  document.getElementById('assessmentCard').innerHTML='<div class="assessment-head"><span>'+title+'</span><span class="assessment-status">'+(S.paused?'已暂停':S.step>=7?'方案已执行':'计算中')+'</span></div>'
-  +'<div class="assessment-sub">物资调度与配送<br>曲山镇沙坝村 · 村委会上报'+a.peopleCount+'人需转移</div>'
-  +'<div class="calc-summary"><b>'+(matching?a.needs.length+'类物资 · '+(a.matched?matchedWarehouseIds().length+'座仓库已匹配':'就近检索'+a.warehouses.length+'座仓库'):routeSummary)+'</b><span>'+(matching?'依据村委会上报的转移人数，分品类测算首日保障需求。':routeSummaryDetail)+'</span></div>'
+  +'<div class="assessment-sub">物资调度与配送<br>曲山镇沙坝村 · '+a.peopleCount+'人已就近安置 · 村委会上报物资不足</div>'
+  +'<div class="calc-summary"><b>'+(matching?a.needs.length+'类物资 · '+(a.matched?matchedWarehouseIds().length+'座仓库已匹配':'就近检索'+a.warehouses.length+'座仓库'):routeSummary)+'</b><span>'+(matching?'依据村委会上报的物资缺口，按首日保障标准整理调拨清单。':routeSummaryDetail)+'</span></div>'
   +(S.step>=7?logisticsDeliverySyncMarkup(a):'')
   +rows.map((r,i)=>'<div class="calc-step '+(r.done?'done':r.active?'active':'')+'"><span class="calc-number">'+(r.done?'✓':i+1)+'</span><div class="calc-body"><h4>'+r.name+'<i>'+(r.done?'已完成':r.active?'计算中…':'待计算')+'</i></h4><p>'+r.body+'</p></div></div>').join('')
   +'<div class="assessment-progress"><i style="width:'+progress+'%"></i></div><div class="assessment-meta"><span>'+(matching?'受灾研判 → 需求 → 库存匹配':'路况筛查 → 时效比较 → 协同投送')+'</span><span>'+progress+'%</span></div>'
-  +'<div class="assessment-note">'+(matching?'按村委会上报的'+a.peopleCount+'人转移需求测算；救生衣、救生艇用于分批转移周转。':'按仿真库存与路网测算；里程、时长随路径自动计算。')+'</div>';
+  +'<div class="assessment-note">'+(matching?'村委会上报'+a.peopleCount+'人已就近安置、物资不足需调拨；按首日保障标准核对清单。':'按仿真库存与路网测算；里程、时长随路径自动计算。')+'</div>';
+ scheduleLogisticsAssessmentLayout();
 }
 function drawSupplyPanel(){
  const a=S.logistics;if(!a||!a.active)return;
  const host=document.getElementById('supplyPanel'),scroll=host.querySelector('.supply-table-scroll')?.scrollTop||0;
  const detailsReady=S.step>1||S.step===1&&a.stageElapsed>=9;
  if(!detailsReady){
-  host.innerHTML='<div class="supply-head"><h3>物资需求及来源仓库<small>测算中</small></h3><p>沙坝村 · AI 正在核算需求并匹配储备仓</p></div><div class="supply-calculating"><i></i><b>物资需求及来源仓库测算中</b><small>计算完成后自动显示物资清单</small></div>';
+  host.innerHTML='<div class="supply-head"><h3>物资需求及来源仓库<small>清单核对中</small></h3><p>沙坝村 · 村委会上报物资不足，正在匹配调拨来源</p></div><div class="supply-calculating"><i></i><b>村委会上报物资清单核对中</b><small>核对完成后显示物资与来源仓库</small></div>';
   return;
  }
  a.supplyDetailsRevealed=true;
@@ -720,14 +757,14 @@ function drawSupplyPanel(){
  }).join('');
  const deliveryStatus=S.step>=9?'配送完成':S.step>=7?'配送中':sourcesReady?'匹配完成':'仓库匹配中';
  const supplySummary=S.step>=7?'签收数量自动更新':sourcesReady?matchedWarehouseIds().length+'座仓库联合保障':'来源仓库匹配中';
- host.innerHTML='<div class="supply-head"><h3>物资需求及来源仓库<small>'+deliveryStatus+'</small></h3><p>沙坝村 · 村委会上报'+a.peopleCount+'人需转移 · '+a.needs.length+'类物资 · '+supplySummary+'</p></div>'
+ host.innerHTML='<div class="supply-head"><h3>物资需求及来源仓库<small>'+deliveryStatus+'</small></h3><p>沙坝村 · '+a.peopleCount+'人已就近安置 · '+a.needs.length+'类调拨物资 · '+supplySummary+'</p></div>'
   +'<div class="supply-table-scroll"><table><thead><tr><th>物资名称</th><th>需求数量</th><th>所在仓库 / 调出数量</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
-  +'<div class="supply-foot">救生衣、救生艇按分批转移周转配置 · 仿真库存<br>'+(sourcesReady?'<b>'+matchedWarehouseIds().map(id=>ALL[id].name).join(' / ')+'</b>':'正在检索并核对可调拨库存')+'</div>';
+  +'<div class="supply-foot">村委会上报物资缺口 · 仿真库存<br>'+(sourcesReady?'<b>'+matchedWarehouseIds().map(id=>ALL[id].name).join(' / ')+'</b>':'正在检索并核对可调拨库存')+'</div>';
  host.querySelector('.supply-table-scroll').scrollTop=scroll;
 }
 function logisticsSubstageText(){
  const a=S.logistics,t=a.stageElapsed;
- if(S.step===1)return t>=9?'物资需求已生成':'正在测算物资需求';
+ if(S.step===1)return t>=9?'物资清单已核对':'正在核对上报物资清单';
  if(S.step===2)return'正在查询周边库存';
  if(S.step===3)return t<3?'正在匹配来源仓库':Object.values(a.unmet).some(q=>q>0)?'库存缺口待补充':'来源仓库已确定';
  if(S.step===4)return !a.initialRoutesResolved?'正在生成配送路线':a.initialRoutesReady?'初始路线已生成':'路线数据待补全';
@@ -743,7 +780,7 @@ function drawLogisticsHeading(){
  const substage=logisticsSubstageText(),key=[name,substage,a.peopleCount].join('|');
  // 子阶段发生变化时才更新横幅，避免计算轮询反复重建标题、触发辅助阅读播报。
  if(host.dataset.headingKey!==key||!host.firstElementChild){
-  host.innerHTML='<div class="act">物资调度与配送</div><h2><span class="logistics-stage-name">'+name+'</span><span class="logistics-substage">· '+substage+'</span></h2><p>沙坝村 · 村委会上报'+a.peopleCount+'人需转移 · '+(S.step<=3?'需求预判 → 就近检索 → 库存匹配':'核验沿线道路状态 · 排除中断道路 · 动态测算时效 · 自动优选')+'</p>';
+  host.innerHTML='<div class="act">物资调度与配送</div><h2><span class="logistics-stage-name">'+name+'</span><span class="logistics-substage">· '+substage+'</span></h2><p>沙坝村 · '+a.peopleCount+'人已就近安置 · 村委会上报物资不足 · '+(S.step<=3?'需求清单核对 → 就近检索 → 库存匹配':'核验沿线道路状态 · 排除中断道路 · 动态测算时效 · 自动优选')+'</p>';
   host.dataset.headingKey=key;
  }
  document.getElementById('mapStage').textContent=name;
@@ -813,12 +850,12 @@ function routePosition(route,fraction=.5){
 function logisticsMarker(position,html,className='',offset=[0,0]){
  return L.marker(position,{icon:L.divIcon({className:'mk '+className,html:'<div style="margin-left:'+offset[0]+'px;margin-top:'+offset[1]+'px">'+html+'</div>',iconSize:[0,0],iconAnchor:[0,0]}),interactive:false,zIndexOffset:800}).addTo(M.routeL);
 }
-let roadIncidentVideoBound=false,roadIncidentVideoFrame=0;
+let roadIncidentVideoBound=false,roadIncidentVideoFrame=0,lastMileCameraBound=false,lastMileCameraFrame=0,lastMileCameraTimer=0,lastMileCameraSelected=-1;
 function ensureRoadIncidentVideoLayer(){
  let layer=document.getElementById('roadIncidentVideoLayer');if(layer)return layer;
  layer=document.createElement('div');layer.id='roadIncidentVideoLayer';layer.className='road-incident-video-layer';layer.setAttribute('aria-label','交通事故现场视频');
  layer.innerHTML='<svg class="road-incident-video-link" aria-hidden="true"><defs><marker id="roadIncidentArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L9,4.5 L0,9 Z" fill="#ff565d"/></marker></defs><line class="road-incident-video-line" marker-end="url(#roadIncidentArrow)"/></svg>'
-  +'<article class="road-incident-video-card"><header class="road-incident-video-head"><div><b>交通事故现场监控</b><small>物流运输配送系统 · 路况核验</small></div><span class="road-incident-live"><i></i>现场视频</span></header>'
+  +'<article class="road-incident-video-card"><header class="road-incident-video-head"><div><b>交通事故现场视频</b><small>物流运输配送系统 · 路况核验</small></div><span class="road-incident-live"><i></i>现场视频</span></header>'
   +'<video class="road-incident-video" src="assets/monitoring/truck-rollover.mp4" autoplay muted loop playsinline preload="auto"></video>'
   +'<footer class="road-incident-video-foot"><b>交通事故阻塞</b><span>货车侧翻 · 禁止通行</span></footer></article>';
  document.body.appendChild(layer);
@@ -829,13 +866,111 @@ function scheduleRoadIncidentVideoUpdate(){
  if(roadIncidentVideoFrame)cancelAnimationFrame(roadIncidentVideoFrame);
  roadIncidentVideoFrame=requestAnimationFrame(()=>{roadIncidentVideoFrame=0;syncRoadIncidentVideo(S.logistics);});
 }
+function lastMileCameraItems(){return INCIDENT.media.filter(item=>item.targetNumber===1||item.targetNumber===3);}
+function ensureLastMileCameraLayer(){
+ let layer=document.getElementById('lastMileCameraLayer');if(layer)return layer;
+ layer=document.createElement('div');layer.id='lastMileCameraLayer';layer.className='logistics-lastmile-camera-layer';layer.setAttribute('aria-label','末端投送山体滑坡监控轮播');
+ layer.innerHTML='<svg class="lastmile-camera-link" aria-hidden="true"><defs><marker id="lastmileCameraArrow1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#45d6eb"/></marker><marker id="lastmileCameraArrow3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#f27eaf"/></marker></defs><line class="lastmile-camera-line"/></svg>'
+  +'<article class="incident-monitor-float" data-index="-1"><div class="incident-monitor-viewport"><video muted playsinline preload="auto"></video><button class="incident-camera-link-button" type="button" hidden>点击重试播放</button></div>'
+  +'<div class="incident-monitor-label"><i>1</i><span>现场监控</span><small>01 / 02</small></div></article>';
+ document.body.appendChild(layer);
+ const video=layer.querySelector('video'),retry=layer.querySelector('.incident-camera-link-button');
+ retry.addEventListener('click',event=>{event.stopPropagation();retry.hidden=true;video.playbackRate=simulationVideoRate(video);video.defaultPlaybackRate=simulationVideoRate(video);video.play().then(()=>scheduleLastMileCameraAdvance()).catch(()=>{retry.hidden=false;retry.textContent='播放失败 · 点击重试';});});
+ return layer;
+}
+function scheduleLastMileCameraAdvance(delay=INCIDENT_CAMERA_VISIBLE_MS/simulationSpeed()){
+ clearTimeout(lastMileCameraTimer);
+ lastMileCameraTimer=setTimeout(()=>{
+  lastMileCameraTimer=0;
+  if(S.paused||!lastMileCameraActive(S.logistics))return;
+  selectLastMileCamera(lastMileCameraSelected+1);
+ },delay);
+}
+function selectLastMileCamera(index){
+ const items=lastMileCameraItems();if(!items.length)return;
+ lastMileCameraSelected=(index%items.length+items.length)%items.length;
+ const item=items[lastMileCameraSelected],layer=ensureLastMileCameraLayer(),tile=layer.querySelector('.incident-monitor-float');
+ const video=tile.querySelector('video'),retry=tile.querySelector('.incident-camera-link-button');
+ tile.classList.add('show','selected');
+ tile.dataset.index=String(item.targetNumber);tile.style.setProperty('--camera-color',INCIDENT_CAMERA_COLORS[item.targetNumber===1?0:2]);
+ tile.querySelector('.incident-monitor-label i').textContent=String(item.targetNumber);
+ tile.querySelector('.incident-monitor-label span').textContent=item.cap;
+ tile.querySelector('.incident-monitor-label small').textContent=String(lastMileCameraSelected+1).padStart(2,'0')+' / '+String(items.length).padStart(2,'0');
+ video.pause();video.onerror=null;video.onended=null;video.src=item.src;video.muted=true;video.defaultMuted=true;video.loop=false;
+ video.playbackRate=simulationVideoRate(video);video.defaultPlaybackRate=simulationVideoRate(video);video.setAttribute('aria-label',item.cap);video.load();retry.hidden=true;retry.textContent='点击重试播放';
+ video.onended=()=>{if(!S.paused&&lastMileCameraActive(S.logistics))selectLastMileCamera(lastMileCameraSelected+1);};
+ video.onerror=()=>{retry.hidden=false;retry.textContent='监控流不可用 · 点击重试';scheduleLastMileCameraAdvance(4500/simulationSpeed());};
+ if(!S.paused)video.play().then(()=>{retry.hidden=true;scheduleLastMileCameraAdvance();}).catch(()=>{retry.hidden=false;scheduleLastMileCameraAdvance(12000/simulationSpeed());});
+ scheduleLastMileCameraUpdate();
+}
+function lastMileCameraActive(a=S.logistics){
+ const lastMileStarted=S.tasks.some(task=>task.finalDelivery&&task.mode==='uav'&&['run','done'].includes(task.status));
+ const allTransportComplete=S.tasks.length>0&&S.tasks.every(task=>task.status==='done');
+ return!!(a&&a.active&&S.step>=7&&S.step<=8&&a.lastMileZoomReady&&lastMileStarted&&!allTransportComplete);
+}
+function scheduleLastMileCameraUpdate(){
+ if(lastMileCameraFrame)cancelAnimationFrame(lastMileCameraFrame);
+ lastMileCameraFrame=requestAnimationFrame(()=>{lastMileCameraFrame=0;syncLastMileCamera(S.logistics);});
+}
+function syncLastMileCamera(a=S.logistics){
+ const active=lastMileCameraActive(a);let layer=document.getElementById('lastMileCameraLayer');
+ if(!active){
+  clearTimeout(lastMileCameraTimer);lastMileCameraTimer=0;
+ if(layer){layer.classList.remove('show');const video=layer.querySelector('video');video?.pause();if(layer.dataset.headingAdjusted==='true'&&!document.body.classList.contains('road-incident-video-active')){const heading=document.querySelector('.logistics-heading');heading?.style.removeProperty('left');heading?.style.removeProperty('transform');heading?.style.removeProperty('width');}layer.dataset.headingAdjusted='false';}
+  lastMileCameraSelected=-1;return;
+ }
+ layer=ensureLastMileCameraLayer();layer.classList.add('show');
+ if(M.map&&!lastMileCameraBound){M.map.on('move zoom resize',scheduleLastMileCameraUpdate);lastMileCameraBound=true;}
+ const tile=layer.querySelector('.incident-monitor-float'),video=tile.querySelector('video'),items=lastMileCameraItems();
+ if(lastMileCameraSelected<0||!video.src)selectLastMileCamera(0);
+ if(S.paused){video.pause();clearTimeout(lastMileCameraTimer);lastMileCameraTimer=0;}
+ else if(video.paused)video.play().then(()=>scheduleLastMileCameraAdvance()).catch(()=>{});
+ const heading=document.querySelector('.logistics-heading'),leftPanelRect=document.querySelector('.panel-left')?.getBoundingClientRect(),rightPanelRect=document.querySelector('.panel-right')?.getBoundingClientRect();
+ const width=Math.min(innerWidth<700?300:360,innerWidth-24);tile.style.width=width+'px';
+ if(heading&&layer.dataset.headingAdjusted==='true'&&!document.body.classList.contains('road-incident-video-active')){heading.style.removeProperty('left');heading.style.removeProperty('transform');heading.style.removeProperty('width');}
+ layer.dataset.headingAdjusted='false';
+ const topbarRect=document.querySelector('.topbar')?.getBoundingClientRect();
+ const mapRect=M.map?.getContainer().getBoundingClientRect();
+ const leftTarget=mapRect?mapRect.left+Math.max(12,Math.min(188,mapRect.width*.1)):12;
+ let left=Math.max(leftTarget,(leftPanelRect?.right||0)+18);
+ const clearRight=rightPanelRect?rightPanelRect.left-width-18:innerWidth-width-12;
+ left=clearRight>=left?Math.min(left,clearRight):Math.min(innerWidth-width-12,left);
+ left=Math.max(12,left);
+ let top=mapRect?mapRect.top+mapRect.height*.31:Math.max(28,(topbarRect?.bottom||0)+12);
+ top=Math.max((topbarRect?.bottom||0)+12,Math.min(innerHeight-190,top));
+ tile.style.left=left+'px';tile.style.top=top+'px';
+ let cardRect=tile.getBoundingClientRect();
+ if(leftPanelRect&&cardRect.left<leftPanelRect.right&&cardRect.right>leftPanelRect.left&&cardRect.top<leftPanelRect.bottom&&cardRect.bottom>leftPanelRect.top){
+  const panelClearTop=leftPanelRect.bottom+12;
+  if(panelClearTop+cardRect.height<=innerHeight-12){top=panelClearTop;tile.style.top=top+'px';cardRect=tile.getBoundingClientRect();}
+ }
+ if(cardRect.bottom>innerHeight-12){top=Math.max(12,innerHeight-cardRect.height-12);tile.style.top=top+'px';cardRect=tile.getBoundingClientRect();}
+ const svg=layer.querySelector('.lastmile-camera-link'),line=layer.querySelector('.lastmile-camera-line');
+ svg.setAttribute('viewBox','0 0 '+innerWidth+' '+innerHeight);svg.setAttribute('width',innerWidth);svg.setAttribute('height',innerHeight);
+ const item=items[lastMileCameraSelected];let target=null,targetRadius=19;
+ const pointMarker=[...document.querySelectorAll('#mapLeaflet .landslide-marker')].find(marker=>marker.querySelector('.logistics-landslide-number')?.textContent.trim()===String(item.targetNumber));
+ const number=pointMarker?.querySelector('.logistics-landslide-number');
+ if(number){const rect=number.getBoundingClientRect();target={x:rect.left+rect.width/2,y:rect.top+rect.height/2};targetRadius=rect.width/2;}
+ else if(M.map&&M.online&&!document.getElementById('mapWrap')?.classList.contains('fallback')){
+  const point=M.map.latLngToContainerPoint(wgs2gcj(item.targetLng,item.targetLat)),rect=M.map.getContainer().getBoundingClientRect();target={x:rect.left+point.x,y:rect.top+point.y};
+ }else{
+  const fallback=document.getElementById('mapFallback'),matrix=fallback?.getScreenCTM();
+  if(fallback&&matrix){const point=fallback.createSVGPoint();point.x=item.targetX;point.y=item.targetY;const screen=point.matrixTransform(matrix);target={x:screen.x,y:screen.y};}
+ }
+ if(target){
+  const color=INCIDENT_CAMERA_COLORS[item.targetNumber===1?0:2],anchors=[{x:cardRect.left+cardRect.width/2,y:cardRect.top},{x:cardRect.right-8,y:cardRect.top+cardRect.height/2},{x:cardRect.left+cardRect.width/2,y:cardRect.bottom-8},{x:cardRect.left+8,y:cardRect.top+cardRect.height/2}],start=anchors.reduce((best,point)=>Math.hypot(point.x-target.x,point.y-target.y)<Math.hypot(best.x-target.x,best.y-target.y)?point:best),startX=start.x,startY=start.y,dx=target.x-startX,dy=target.y-startY,length=Math.hypot(dx,dy)||1;
+  line.style.display='';line.style.stroke=color;line.setAttribute('marker-end','url(#lastmileCameraArrow'+item.targetNumber+')');line.setAttribute('x1',startX);line.setAttribute('y1',startY);line.setAttribute('x2',target.x-dx/length*targetRadius);line.setAttribute('y2',target.y-dy/length*targetRadius);
+ }else line.style.display='none';
+}
+window.addEventListener('resize',scheduleLastMileCameraUpdate,{passive:true});
+window.addEventListener('scroll',scheduleLastMileCameraUpdate,true);
 function syncRoadIncidentVideo(a=S.logistics){
  const show=!!(a&&a.active&&S.step===5&&a.blockedInfo?.length&&a.roadClosurePromptReady!==false);
  let layer=document.getElementById('roadIncidentVideoLayer');
  if(!show){
   document.body.classList.remove('road-incident-video-active');
   const heading=document.querySelector('.logistics-heading');
-  if(heading){heading.style.removeProperty('left');heading.style.removeProperty('transform');heading.style.removeProperty('width');}
+  if(heading&&!document.querySelector('#lastMileCameraLayer.show')){heading.style.removeProperty('left');heading.style.removeProperty('transform');heading.style.removeProperty('width');}
   if(layer?.classList.contains('show')){layer.classList.remove('show');const video=layer.querySelector('video');video.pause();try{video.currentTime=0;}catch(_){}}
   return;
  }
@@ -874,7 +1009,7 @@ function syncRoadIncidentVideo(a=S.logistics){
 window.addEventListener('resize',scheduleRoadIncidentVideoUpdate,{passive:true});
 window.addEventListener('scroll',scheduleRoadIncidentVideoUpdate,true);
 function drawLogisticsMap(){
- const a=S.logistics;syncRoadIncidentVideo(a);if(!a||!M.online)return;
+ const a=S.logistics;syncRoadIncidentVideo(a);syncLastMileCamera(a);if(!a||!M.online)return;
  L.circle(ll(INCIDENT.epic),{radius:INCIDENT.radiusKm*1000,color:'#ff7770',weight:2,fillOpacity:.1,interactive:false}).addTo(M.routeL);
  if(S.step>=2){
   const selectionComplete=logisticsWarehouseSelectionComplete(a);
@@ -951,8 +1086,14 @@ function drawLogisticsMap(){
    });
   });
  }
- if(S.step>=7&&a.lastMileZoomReady)INCIDENT.media.filter(item=>item.targetNumber===1||item.targetNumber===3).forEach(item=>{
-  const color=item.targetNumber===1?'#45d6eb':'#f27eaf',side=item.targetNumber===3?'left':'right',pos=wgs2gcj(item.targetLng,item.targetLat);
-  logisticsMarker(pos,'<div class="logistics-landslide-pin '+side+'" style="--hazard-color:'+color+'"><i class="logistics-landslide-number">'+item.targetNumber+'</i><span class="logistics-landslide-copy"><b>'+item.targetName+'</b><small>'+item.targetIssue+'</small></span></div>','landslide-marker').setZIndexOffset(1250);
- });
+ const previousLandslidePins=[];
+ M.routeL.eachLayer(layer=>{if(layer.options?.icon?.options?.className?.includes('landslide-marker'))previousLandslidePins.push(layer);});
+ previousLandslidePins.forEach(layer=>M.routeL.removeLayer(layer));
+ if(S.step>=7&&a.lastMileZoomReady){
+  INCIDENT.media.filter(item=>item.targetNumber===1||item.targetNumber===3).forEach(item=>{
+   const color=item.targetNumber===1?'#45d6eb':'#f27eaf',side=item.targetNumber===1?'left':'right',pos=wgs2gcj(item.targetLng,item.targetLat);
+   logisticsMarker(pos,'<div class="logistics-landslide-pin '+side+'" style="--hazard-color:'+color+'"><i class="logistics-landslide-number">'+item.targetNumber+'</i><span class="logistics-landslide-copy"><b>'+item.targetName+'</b><small>'+item.targetIssue+'</small></span></div>','landslide-marker').setZIndexOffset(1250);
+  });
+  requestAnimationFrame(scheduleLastMileCameraUpdate);
+ }
 }
