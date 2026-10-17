@@ -1536,12 +1536,12 @@ function drawAssessment(){
  ];
  const card=document.getElementById('assessmentCard');
  card.classList.toggle('show',a.shown);card.classList.toggle('complete',done);
- card.innerHTML='<div class="assessment-head"><span>收到报警，开始灾情辅助分析</span><span class="assessment-status">'+(done?'研判完成':'计算中')+'</span></div>'
+ card.innerHTML='<div class="assessment-head"><span>收到报警，开始灾情辅助分析</span><span class="assessment-status">'+(done?'分析完成':'计算中')+'</span></div>'
   +'<div class="assessment-sub">'+INCIDENT.location+'<br>暴雨 · 泥石流 · 道路积水与冲毁</div>'
-  +'<div class="assessment-monitoring">研判依据：现场监控、灾情监测及村委会现场报告</div>'
-  +(done?'<div class="assessment-result"><small>灾情综合研判结果</small><strong>需紧急调拨应急物资</strong><span class="assessment-estimate">曲山镇沙坝村 · '+result.shelteredPeopleText+'已就近安置</span><span>村委会上报生活保障物资不足，建议立即启动应急物资调拨。</span></div>':'')
+  +'<div class="assessment-monitoring">分析依据：现场监控、灾情监测及村委会现场报告</div>'
+  +(done?'<div class="assessment-result"><small>灾情辅助分析结果</small><strong>需紧急调拨应急物资</strong><span class="assessment-estimate">曲山镇沙坝村 · '+result.shelteredPeopleText+'已就近安置</span><span>村委会上报生活保障物资不足，建议立即启动应急物资调拨。</span></div>':'')
   +rows.map(row=>{const ready=done||elapsed>=row.at;return'<div class="assessment-row '+(ready?'ready':'pending')+'"><div class="assessment-row-head"><span>'+row.label+'</span><span class="assessment-row-state">'+(ready?'已汇总':'计算中')+'</span></div><div class="assessment-value">'+(ready?row.value:'正在分析监控画面与区域暴露情况')+'</div></div>';}).join('')
-  +'<div class="assessment-progress"><i style="width:'+p+'%"></i></div><div class="assessment-meta"><span>'+(done?'综合研判已汇总':'监控识别 · 道路分析 · 影响范围研判')+'</span><span>'+p+'%</span></div>'
+  +'<div class="assessment-progress"><i style="width:'+p+'%"></i></div><div class="assessment-meta"><span>'+(done?'分析结果已汇总':'监控识别 · 道路分析 · 影响范围分析')+'</span><span>'+p+'%</span></div>'
   +'<div class="assessment-note">96人已就近安置完成；村委会上报物资不足，需要调拨。</div>';
 }
 function beginIncident(){
@@ -1599,7 +1599,7 @@ function setIncidentPaused(paused){
  });});
  if(paused){clearTimeout(incidentCameraAdvanceTimer);incidentCameraAdvanceTimer=0;}
  const badge=document.querySelector('#assessmentCard .assessment-status');
- if(badge)badge.textContent=paused?'研判已暂停':S.incident.complete?'研判完成':'计算中';
+ if(badge)badge.textContent=paused?'分析已暂停':S.incident.complete?'分析完成':'计算中';
 }
 
 /* ============ 研判 ============ */
