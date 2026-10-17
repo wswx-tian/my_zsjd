@@ -370,7 +370,7 @@ function loadLogisticsRoadRoutes(a){
   a.roadRoutesReady=a.routes.length>0&&a.routes.every(route=>route.geo&&route.geo.length>1);
   a.roadRoutesResolved=true;
   a.fastest=[...a.routes].sort((x,y)=>x.dur-y.dur)[0]||null;
-  S.routesDirty=true;drawLogisticsCalculation();VIEW.draw();
+  S.routesDirty=true;drawLogisticsCalculation();drawCtl();VIEW.draw();
  });
  a.roadRoutesReady=a.routes.length>0&&a.routes.every(route=>route.geo&&route.geo.length>1);
  a.roadRoutesResolved=a.roadRoutesReady;
@@ -585,6 +585,7 @@ function openLogisticsConfirmation(step){
  document.querySelector('.stage-confirm-countdown').hidden=!autoConfirm;
  document.querySelector('.stage-confirm-progress').hidden=!autoConfirm;
  modal.hidden=false;modal.setAttribute('aria-hidden','false');
+ drawCtl();
  if(!autoConfirm)return;
  const deadline=performance.now()+6000;
  const update=()=>{
@@ -615,7 +616,7 @@ function beginLogisticsStep(step){
   clearTimeout(a.roadClosureAlertTimer);a.roadClosureAlertStartedAt=performance.now();a.roadClosurePromptReady=false;
   a.roadClosureAlertTimer=setTimeout(()=>{
    a.roadClosureAlertTimer=null;if(S.logistics!==a||!a.active||S.step!==5)return;
-   a.roadClosurePromptReady=true;S.routesDirty=true;VIEW.draw();drawLogisticsCalculation();
+   a.roadClosurePromptReady=true;S.routesDirty=true;VIEW.draw();drawLogisticsCalculation();drawCtl();
    if(a.roadClosureNarrationPending)narrateLogisticsStep(5);
   },ROAD_CLOSURE_ALERT_MS);
  }else if(a.roadClosureAlertTimer){clearTimeout(a.roadClosureAlertTimer);a.roadClosureAlertTimer=null;a.roadClosurePromptReady=true;}
@@ -638,9 +639,9 @@ function beginLogisticsStep(step){
    if(S.logistics!==a||!a.active||S.step!==step)return;
    if(step>=6)buildCooperativeTasks();
    fitLogisticsView();
-   drawLogisticsPanels();VIEW.draw();narrateLogisticsStep(step);
-  }).catch(error=>{console.error('路线计算失败',error);if(S.logistics===a&&a.active&&S.step===step)narrateLogisticsStep(step);});
- }else narrateLogisticsStep(step);
+   drawLogisticsPanels();VIEW.draw();if(!S.timelineReview)narrateLogisticsStep(step);
+  }).catch(error=>{console.error('路线计算失败',error);if(S.logistics===a&&a.active&&S.step===step&&!S.timelineReview)narrateLogisticsStep(step);});
+ }else if(!S.timelineReview)narrateLogisticsStep(step);
 }
 function logisticsTick(){
  const a=S.logistics;if(!a||!a.active)return;
@@ -676,7 +677,7 @@ function logisticsTick(){
  }
  if(S.step===2){const count=Math.min(a.warehouses.length,1+Math.floor(a.stageElapsed/1.7));if(count!==a.discovered){a.discovered=count;S.routesDirty=true;drawSupplyPanel();}}
  drawLogisticsCalculation();VIEW.draw();
- if(a.stageElapsed>=LOGISTICS_CFG.waits[S.step]&&!a.narrationPending&&(S.step<4||(S.step===4?a.initialRoutesResolved:a.roadRoutesResolved))&&(S.step!==6||a.tasksBuilt)){
+ if(!S.timelineReview&&a.stageElapsed>=LOGISTICS_CFG.waits[S.step]&&!a.narrationPending&&(S.step<4||(S.step===4?a.initialRoutesResolved:a.roadRoutesResolved))&&(S.step!==6||a.tasksBuilt)){
   if([1,3,5].includes(S.step)){openLogisticsConfirmation(S.step);return;}
   clearInterval(a.uiTimer);a.uiTimer=null;enterStep(S.step+1);
  }

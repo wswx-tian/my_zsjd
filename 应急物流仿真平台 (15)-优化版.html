@@ -656,7 +656,7 @@ const LOG_SYS={
  '物流运输配送系统':SYS_DEF[2]};
 const SPD={truck:9,uav:20}, CAP={truck:60,uav:18};
 /* ===== 全局状态 ===== */
-const S={phase:0,step:0,sim:0,simRender:0,stepTimer:null,transportTimer:null,introTimer:null,paused:false,
+const S={phase:0,step:0,sim:0,simRender:0,stepTimer:null,transportTimer:null,introTimer:null,paused:false,timelineReview:false,
   cfg:{type:'暴雨泥石流',epic:'T1',speed:2},
  autoConfirm:false,
  affected:[],blocked:new Set(),demands:{},tasks:[],logs:[],
@@ -1373,6 +1373,13 @@ const INCIDENT_CAMERA_COLORS=['#45d6eb','#ffc264','#f27eaf'];
 const INCIDENT_CAMERA_ROTATE_MS=8000;
 const INCIDENT_CAMERA_VISIBLE_MS=INCIDENT_CAMERA_ROTATE_MS;
 function simulationSpeed(){return Math.max(.25,Number(S.cfg.speed)||1);}
+/* 倍速切换时重置当前阶段的墙钟基准，避免切幕后遗留的计时差被按新倍率重复折算。 */
+function rebaseSimulationClocks(){
+ const now=performance.now();
+ if(S.step===0&&S.incident)S.incident.lastTick=now;
+ if(S.step<=6&&S.logistics)S.logistics.lastTick=now;
+ if(S.step>=7){transportTickAt=now;S.simRender=S.sim;}
+}
 function simulationVoiceRate(base=1){return Math.min(10,Math.max(.1,base*simulationSpeed()));}
 function simulationVideoRate(video){
  const slowScene=!!video?.closest('#incidentCameraFloatingLayer,.logistics-lastmile-camera-layer')||SP.o===SCENES.disaster;
@@ -1745,9 +1752,14 @@ function enterStep(i){
  else if(d.focus)VIEW.focus(d.focus);
  if(d.hideScene)M.hideScene();
  if(d.scene)M.showScene(SCENES[d.scene]);
- if(d.speak&&[7,8,9].includes(i)){const t=d.speak();if(t)speak(t,true);if(d.tagline)speakEmphasis(d.tagline,true);}
+ if(d.speak&&[7,8,9].includes(i)&&!S.timelineReview){const t=d.speak();if(t)speak(t,true);if(d.tagline)speakEmphasis(d.tagline,true);}
  if(d.calc)d.calc();
-  if(i===7){if(S.logistics){clearInterval(S.logistics.uiTimer);S.logistics.uiTimer=null;}startTransport();}
+ if(i===7){
+   if(S.logistics){clearInterval(S.logistics.uiTimer);S.logistics.uiTimer=null;}
+   const allTasksComplete=S.tasks.length>0&&S.tasks.every(t=>t.status==='done');
+   if(S.timelineReview){clearInterval(S.transportTimer);S.transportTimer=null;S.simRender=S.sim;}
+   else startTransport();
+  }
  if(i===9)finish();
   renderAll();
 }
@@ -1806,7 +1818,7 @@ function startTransport(){
 let transportRenderFrame=0,transportTickAt=0,fallbackRenderAt=0;
 function transportRenderLoop(){
  transportRenderFrame=requestAnimationFrame(transportRenderLoop);
- if(!S.started||S.paused||S.step<7||S.step>8)return;
+ if(!S.started||S.paused||S.timelineReview||S.step<7||S.step>8)return;
  const elapsed=Math.min(400,Math.max(0,performance.now()-transportTickAt));
  S.simRender=S.sim+elapsed/400*0.5*simulationSpeed();
  if(M.online)M.updateUnits();
@@ -1875,6 +1887,57 @@ function jumpAct(targetAct){
   S.paused=false;enterStep(1);return;
  }
  if(S.step>0){reset();start();}
+}
+function navigateTimelineStage(delta){
+ if(!S.started)return;
+ const completedRun=S.tasks.length>0&&S.tasks.every(t=>t.status==='done');
+ const completedReview=S.timelineReview&&completedRun;
+ const resumeForNavigation=()=>{if(!S.paused)return;S.paused=false;if('speechSynthesis' in window)speechSynthesis.resume();pauseEmphasisAudio(false);};
+ if(S.logistics?.confirmationPending!==null&&S.logistics?.confirmationPending!==undefined){
+  document.getElementById('stageConfirmButton')?.focus();return;
+ }
+ if(delta>0&&S.step===0){resumeForNavigation();jumpAct(1);return;}
+ if(delta<0&&S.step===1&&!S.timelineReview){resumeForNavigation();jumpAct(0);return;}
+ if(S.step>=7){
+  const complete=S.tasks.length>0&&S.tasks.every(t=>t.status==='done');
+  const target=S.step+delta;
+  if(complete){
+   if(target<1||target>9)return;
+   resumeForNavigation();
+   S.timelineReview=true;clearTimeout(S.stepTimer);clearInterval(S.transportTimer);
+   S.stepTimer=null;S.transportTimer=null;S.simRender=S.sim;
+   enterStep(target);return;
+  }
+  if(S.timelineReview){
+   if(target<1||target>8)return;
+   resumeForNavigation();
+   if(delta>0&&target>=7){S.timelineReview=false;enterStep(target);if(target===8)startTransport();return;}
+   enterStep(target);return;
+  }
+  if(delta<0&&S.step<=8&&S.step>1){
+   resumeForNavigation();
+   S.timelineReview=true;clearTimeout(S.stepTimer);clearInterval(S.transportTimer);
+   S.stepTimer=null;S.transportTimer=null;S.simRender=S.sim;
+   enterStep(target);return;
+  }
+  return;
+ }
+ if(S.step<1||S.step>6)return; // 运输、签收和结束由实际任务状态推进
+ const target=S.step+delta;if(target<0||target>6&&!(S.timelineReview&&target===7))return;
+ resumeForNavigation();
+ if(S.logistics)S.logistics.lastTick=performance.now();
+ if(delta>0&&S.step===5&&(!S.logistics?.roadRoutesResolved||!S.logistics?.roadClosurePromptReady)&&!completedReview)return;
+ if(delta>0&&[1,3,5].includes(S.step)&&!S.logistics?.confirmedStages.has(S.step)&&!completedReview){
+  const a=S.logistics;if(!a||a.confirmationPending===S.step)return;
+  if('speechSynthesis' in window)speechSynthesis.cancel();cancelEmphasisAudio();
+  a.narrationPending=false;a.stageElapsed=Math.max(a.stageElapsed,LOGISTICS_CFG.waits[S.step]);
+  drawLogisticsCalculation();drawSupplyPanel();openLogisticsConfirmation(S.step);return;
+ }
+ if(delta>0&&S.step===6&&!S.logistics?.tasksBuilt&&!completedReview)return;
+ if('speechSynthesis' in window)speechSynthesis.cancel();cancelEmphasisAudio();
+ const allTasksComplete=S.tasks.length>0&&S.tasks.every(t=>t.status==='done');
+ if(S.timelineReview&&target>=7&&!allTasksComplete)S.timelineReview=false;
+ enterStep(target);
 }
 /* ============ 实景场景定义（占位，用户提供素材后替换） ============ */
 const SCENES={
@@ -2037,13 +2100,22 @@ function drawSys(){
 /* ============ 控制台 + 任务 ============ */
 function drawCtl(){
  const c=S.cfg,running=S.started&&S.step<9;
- const secondAct=S.started&&S.step>0,prevDisabled=!S.started||!secondAct,nextDisabled=S.started&&secondAct;
+ const stageName=TL_NAMES[Math.max(0,Math.min(9,S.step))],confirmationPending=!!S.logistics?.confirmationPending;
+ const completedRun=S.tasks.length>0&&S.tasks.every(t=>t.status==='done');
+ const completedReview=S.timelineReview&&completedRun;
+ const nextWaitsForRoads=S.step===5&&(!S.logistics?.roadRoutesResolved||!S.logistics?.roadClosurePromptReady)&&!completedReview;
+ const nextWaitsForTasks=S.step===6&&!S.logistics?.tasksBuilt&&!completedReview;
+ const completedTimeline=S.step>=7&&S.tasks.length>0&&S.tasks.every(t=>t.status==='done');
+ const activeTransportReviewable=S.step>=7&&S.step<=8&&S.tasks.length>0;
+ const prevDisabled=!S.started||S.step===0||S.step>=7&&!completedTimeline&&!activeTransportReviewable||confirmationPending;
+ const nextDisabled=!S.started||S.step>=9||S.step>=7&&!completedTimeline&&!S.timelineReview||S.timelineReview&&S.step===8&&!completedTimeline||nextWaitsForTasks||nextWaitsForRoads||confirmationPending;
+ const navBlockedTitle=confirmationPending?'请先在确认弹窗中完成当前节点确认':nextWaitsForRoads?'路线仍在测算中，完成后即可进入下一阶段':nextWaitsForTasks?'正在生成协同任务，请稍候':S.step>=9?'已到达最后阶段':S.step>=7&&!completedTimeline&&!S.timelineReview?'运输阶段按任务进度推进；可用上一阶段回看':'进入时间轴下一阶段';
   let h=S.started?'<div class="scenario-lock"><div class="eyebrow">固定事件场景 · 灾情监测与处置</div><strong>暴雨引发泥石流灾害</strong>'
    +'<div class="location">'+INCIDENT.location+'</div><div class="assessment-summary">'
    +(S.incident.complete?S.incident.result.shelteredPeopleText+'已就近安置 · 村委会上报物资不足需调拨':'灾情综合研判中…')+'</div></div>':'';
- h+=`<div class="act-nav"><button type="button" id="btnPrevAct" ${prevDisabled?'disabled':''} title="回到灾情研判并重新开始">‹ 上一幕</button>
-   <div class="act-nav-title">${secondAct?'物资调度与配送':'灾情触发与研判'}</div>
-   <button type="button" id="btnNextAct" ${nextDisabled?'disabled':''} title="跳转至物资调度与配送">下一幕 ›</button></div>`;
+ h+=`<div class="act-nav"><button type="button" id="btnPrevAct" ${prevDisabled?'disabled':''} title="${confirmationPending?'请先在确认弹窗中完成当前节点确认':'返回时间轴上一阶段'}">‹ 上一阶段</button>
+   <div class="act-nav-title" title="${S.started?`${S.step+1}/10 · ${stageName}`:'灾情触发与研判'}">${S.started?`${S.step+1}/10 · ${stageName}`:'灾情触发与研判'}</div>
+   <button type="button" id="btnNextAct" ${nextDisabled?'disabled':''} title="${navBlockedTitle}">下一阶段 ›</button></div>`;
  h+=`<div class="ctl-grp"><div class="ctl-l">推演速度</div><div class="seg" data-grp="speed">
   ${[1,2,4].map(v=>`<button data-v="${v}" class="${c.speed===v?'sel':''}">${v}x</button>`).join('')}</div></div>`;
  h+=`<div class="auto-confirm-control"><div class="auto-confirm-copy"><b>节点自动确认</b><small>${S.autoConfirm?'开启 · 倒计时结束后自动继续':'关闭 · 停在节点等待确认'}</small></div><label class="auto-confirm-switch" aria-label="节点自动确认开关"><input id="autoConfirmToggle" type="checkbox" ${S.autoConfirm?'checked':''}><span></span></label></div>`;
@@ -2090,7 +2162,7 @@ function drawFloat(){
 }
 
 /* ============ 时间轴 ============ */
-const TL_NAMES=['灾情触发与研判','需求预判','就近找仓','物资匹配','道路排查','路线测算','协同优选','协同投送','到达签收','结束'];
+const TL_NAMES=['灾情触发与研判','需求收集','就近找仓','物资匹配','道路排查','路线测算','协同优选','协同投送','到达签收','结束'];
 function drawTimeline(){
  document.getElementById('tlSteps').innerHTML=TL_NAMES.map((t,i)=>{
   let cls='';if(S.step>i)cls='done';else if(S.step===i)cls='act';
@@ -2144,7 +2216,7 @@ function reset(){
  if('speechSynthesis' in window){speechSynthesis.cancel();speechSynthesis.resume();}
   if(transportRenderFrame)cancelAnimationFrame(transportRenderFrame);
   transportRenderFrame=0;
-  S.started=false;S.phase=0;S.step=0;S.sim=0;S.simRender=0;S.paused=false;S.autoConfirm=false;
+  S.started=false;S.phase=0;S.step=0;S.sim=0;S.simRender=0;S.paused=false;S.timelineReview=false;S.autoConfirm=false;
   S.cfg.type=INCIDENT.type;S.cfg.epic=INCIDENT.epic;
   S.incident={timer:null,elapsed:0,lastTick:0,videoShown:false,shown:false,complete:false,result:null,cameraSeen:[],
    focusRequested:false,mapFocusReady:false};
@@ -2177,15 +2249,15 @@ document.addEventListener('click',e=>{
  if(e.target.closest('#stageConfirmButton')){confirmLogisticsCheckpoint();return;}
  const sb=e.target.closest('.seg button');
  if(sb){
-  S.cfg.speed=Number(sb.dataset.v);applySimulationPlaybackSpeed();drawCtl();
+  S.cfg.speed=Number(sb.dataset.v);rebaseSimulationClocks();applySimulationPlaybackSpeed();drawCtl();
   if(S.step===0&&SP.o===SCENES.disaster&&!S.paused){
    const video=document.querySelector('#incidentCameraFloatingLayer video');
    if(video&&!video.paused)scheduleIncidentCameraAdvance(incidentCameraVisibleDuration());
   }
   return;
  }
- if(e.target.closest('#btnPrevAct')){jumpAct(0);return;}
- if(e.target.closest('#btnNextAct')){jumpAct(1);return;}
+ if(e.target.closest('#btnPrevAct')){navigateTimelineStage(-1);return;}
+ if(e.target.closest('#btnNextAct')){navigateTimelineStage(1);return;}
  const lb=e.target.closest('.layer-switch button');
  if(lb){setLayerUI(lb.dataset.layer);return;}
  if(e.target.closest('#btnGo'))start();
