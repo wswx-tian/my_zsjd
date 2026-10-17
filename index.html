@@ -548,9 +548,9 @@ footer.foot-zone{grid-area:2/2/3/3;position:relative;z-index:1;pointer-events:au
         <div class="incident-banner" id="incidentBanner" role="alert" aria-live="assertive">
           <div class="incident-eyebrow"><i class="incident-dot"></i><span id="incidentEyebrow">突发灾情警报 · 实时监测触发</span></div>
           <h1 id="incidentTitle">北川曲山镇沙坝村因持续暴雨发生泥石流灾害</h1>
-          <p id="incidentDescription">受灾范围聚焦沙坝村，正在根据现场监控监测开展灾情综合研判。</p>
+          <p id="incidentDescription">收到报警，开始灾情辅助分析</p>
         </div>
-        <aside class="assessment-card" id="assessmentCard" aria-label="AI 灾情研判" aria-live="polite"></aside>
+        <aside class="assessment-card" id="assessmentCard" aria-label="收到报警，开始灾情辅助分析" aria-live="polite"></aside>
         <div class="logistics-heading" id="logisticsHeading" aria-live="polite"></div>
         <section class="supply-panel" id="supplyPanel" aria-label="物资匹配清单"></section>
         <div class="layer-switch">
@@ -1536,7 +1536,7 @@ function drawAssessment(){
  ];
  const card=document.getElementById('assessmentCard');
  card.classList.toggle('show',a.shown);card.classList.toggle('complete',done);
- card.innerHTML='<div class="assessment-head"><span>AI 灾情综合研判</span><span class="assessment-status">'+(done?'研判完成':'计算中')+'</span></div>'
+ card.innerHTML='<div class="assessment-head"><span>收到报警，开始灾情辅助分析</span><span class="assessment-status">'+(done?'研判完成':'计算中')+'</span></div>'
   +'<div class="assessment-sub">'+INCIDENT.location+'<br>暴雨 · 泥石流 · 道路积水与冲毁</div>'
   +'<div class="assessment-monitoring">研判依据：现场监控、灾情监测及村委会现场报告</div>'
   +(done?'<div class="assessment-result"><small>灾情综合研判结果</small><strong>需紧急调拨应急物资</strong><span class="assessment-estimate">曲山镇沙坝村 · '+result.shelteredPeopleText+'已就近安置</span><span>村委会上报生活保障物资不足，建议立即启动应急物资调拨。</span></div>':'')
@@ -2272,7 +2272,7 @@ function reset(){
   document.getElementById('incidentBanner').classList.remove('complete');
   document.getElementById('incidentEyebrow').textContent='突发灾情警报 · 实时监测触发';
   document.getElementById('incidentTitle').textContent='北川曲山镇沙坝村因持续暴雨发生泥石流灾害';
-  document.getElementById('incidentDescription').textContent='受灾范围聚焦沙坝村，正在根据现场监控监测开展灾情综合研判。';
+  document.getElementById('incidentDescription').textContent='收到报警，开始灾情辅助分析';
   document.getElementById('assessmentCard').classList.remove('complete');
   document.getElementById('assessmentCard').innerHTML='';
   document.getElementById('mapStage').textContent='常态监测';
