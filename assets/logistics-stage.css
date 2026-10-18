@@ -71,7 +71,6 @@ body.logistics-scene.logistics-delivery .supply-panel,body.logistics-scene.logis
 @keyframes roadClosureMarkerFlash{0%,25%,50%,75%,100%{opacity:.16;transform:scale(.78)}12%,37%,62%,87%{opacity:1;transform:scale(1.12)}}
 @media(prefers-reduced-motion:reduce){.leaflet-overlay-pane .road-closure-flash-line,.road-closure-alert-flash{animation:none;opacity:.78}}
 .transfer-label{display:block;box-sizing:border-box;width:max-content;min-width:225px;max-width:255px;padding:8px 10px;border:1px solid #eebd72;border-radius:6px;background:#251c29f5;color:#ffe2b0;white-space:normal;text-align:center;font-size:15px;line-height:1.5;box-shadow:0 3px 10px #0005;transform:translate(-50%,-50%)}
-.mk.team .mk-ic{background:#8b6330;border-color:#ffe2b0;box-shadow:0 0 0 3px #eebd724d}
 .task .t2.manifest{white-space:normal;line-height:1.6;font-size:9px}.task .t2.route-meta{color:#80c7d0}
 .road-incident-video-layer{display:none;position:fixed;inset:0;z-index:1055;pointer-events:none}
 .road-incident-video-layer.show{display:block}

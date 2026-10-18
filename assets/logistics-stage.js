@@ -3,10 +3,11 @@ const ROAD_CLOSURE_ALERT_MS=1050;
 const ROUTE_INITIAL_LINES_AT=1;
 const ROUTE_INCIDENT_MEDIA_AT=ROUTE_INITIAL_LINES_AT+1;
 const ROUTE_REVEAL_CONFIRM_HOLD_MS=600;
+const UAV_FLEET_SIZE=3;
 const LOGISTICS_CFG={
  warehouseIds:['P03','P05','P04','P01','P02','P08','P09','P10','P11','P12','P13'],searchRadiusKm:100,handoff:'X01',detour:'X02',
- waits:[0,12,8,3,8,9,9],truckKg:1500,uavKg:20,teamKg:240,teamFleet:3,
- speed:{truck:.7,uav:1.3,team:.067},loadMinutes:6,uavPriorityCaps:{hygiene:16,light:2},
+ waits:[0,12,8,3,8,9,9],truckKg:1500,uavKg:200,
+ speed:{truck:.7,uav:2.6},loadMinutes:6,
  inventory:{
   P03:{water:540,food:360,hygiene:40,blanket:90,medical:0,light:8},
   P05:{water:480,food:360,hygiene:40,blanket:90,medical:0,light:6},
@@ -44,7 +45,7 @@ const SUPPLY_CATALOG=[
 const SUPPLY_BY_ID=Object.fromEntries(SUPPLY_CATALOG.map(m=>[m.mat,m]));
 SUPPLY_CATALOG.forEach(m=>MAT_NAME[m.mat]=m.name);MAT_NAME.mixed='综合保障物资';
 Object.assign(ALL.P03,{name:'北川储备仓'});Object.assign(ALL.P05,{name:'安州储备仓'});Object.assign(ALL.P04,{name:'江油储备仓'});
-// 村外安全转运点连接一条应急人员可通行的步行接驳通道。
+// 村外安全转运点是干线车辆与末端无人机的交接位置。
 for(const p of [
  {id:'X01',name:'沙坝村安全转运点',lat:31.853542,lng:104.493251,x:149,y:380,type:'hub',trucks:0,uav:2,stock:null},
  /* 曲山起降点紧邻沙坝村，作为无人机前置与投送的起飞机场；原先启用的是江油起降点，空机前置航程过远。 */
@@ -55,10 +56,8 @@ for(const e of [
  {a:'P03',b:'X02'},
  {a:'P05',b:'X02'},
  {a:'P04',b:'X02'},
- {a:'X02',b:'X01'},
- {a:'X01',b:INCIDENT.epic,modes:['team'],name:'应急人员步行接驳通道'}
+ {a:'X02',b:'X01'}
 ]){e.len=havKm(e.a,e.b);EDGES.push(e);}
-MK_ICON.team='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="7" r="2.5"/><path d="M3.5 19v-1.2a4.5 4.5 0 0 1 9 0V19M16.5 8.5a2.3 2.3 0 1 0 0-4.6M15.5 14a4.2 4.2 0 0 1 5 4.1V19"/></svg>';
 
 function logisticsState(){return{
  active:true,stageElapsed:0,lastTick:performance.now(),uiTimer:null,discovered:0,
@@ -68,7 +67,7 @@ function logisticsState(){return{
  prepared:false,matched:false,scanned:false,roadDataPrepared:false,planned:false,initialRoutesVisible:false,routeIncidentSequenceStarted:false,routeCauseNarrationPending:false,routeCauseNarrated:false,routeRolloverDetected:false,routeRolloverActivated:false,initialRoutes:[],initialRoutesPending:null,initialRoutesReady:false,initialRoutesResolved:false,routes:[],blockedInfo:[],roadRoutesPending:null,roadRoutesReady:false,roadRoutesResolved:false,
  roadClosurePromptReady:true,roadClosureAlertStartedAt:0,roadClosureAlertTimer:null,roadClosureNarrationPending:false,
  confirmationPending:null,confirmationTimer:null,confirmationCountdownTimer:null,confirmationNarrationPending:false,confirmationNarrationTimer:null,allocationCompletionSpoken:false,confirmedStages:new Set(),routeCoordinationNarrationPending:false,
- tasksBuilt:false,airRoute:null,teamRoute:null,fastest:null,lastMileZoomed:false,
+  tasksBuilt:false,airRoute:null,fastest:null,lastMileZoomed:false,
  routeCameraStarted:false,routeCameraStep:null,routeCameraReady:false,routeCameraFitToken:0,routeCameraFitTimer:null,routeCameraMoveEndHandler:null,routeRevealedAt:0,
  routeAnalysisNarrated:false,routeCoordinationNarrated:false,capacityMatchingStarted:false,uavDeliveryNarrated:false
 };}
@@ -196,7 +195,12 @@ function logisticsTaskDeparted(task){
  const a=S.logistics;if(!a||!a.active)return;
  if(task.preposition){
   if(task.departureLogged)return;task.departureLogged=true;
-  addLog('back','前置无人机分队','无人机已从<b>'+shortName(ALL[task.depot].name)+'</b>起飞，前往沙坝村安全转运点集结待命，与干线车辆同步发运。');
+  addLog('back','无人机运输分队','无人机 <b>'+uavCallsign(task,0)+'</b> 已从<b>'+shortName(ALL[task.depot].name)+'</b>起飞，前往沙坝村安全转运点集结待命。');
+  return;
+ }
+ if(task.returning){
+  if(task.departureLogged)return;task.departureLogged=true;
+  addLog('back','无人机运输分队','无人机 <b>'+uavCallsign(task,0)+'</b> 已完成本批投送，空载返航至安全转运点，准备下一趟运输。');
   return;
  }
  if(task.finalDelivery){
@@ -204,10 +208,9 @@ function logisticsTaskDeparted(task){
   logisticsMoveStock(a.handoffStock,task.manifest,-1,'转运点出库');
   task.manifest.forEach(m=>a.handoffDispatched[m.mat]=(a.handoffDispatched[m.mat]||0)+m.qty);task.stockDispatched=true;
   if(task.mode==='uav'){
-   addLog('back','前置无人机分队','车辆物资已抵达转运点，无人机完成装载并起飞，向受灾点投送'+logisticsManifestText(task.manifest)+'。');
-   if(!a.uavDeliveryNarrated&&!S.timelineReview){a.uavDeliveryNarrated=true;speak('无人机开始投送紧急物资。',true);}
+   addLog('back','无人机运输分队','无人机 <b>'+uavCallsign(task,0)+'</b> 已完成装载并起飞，向受灾点投送'+logisticsManifestText(task.manifest)+'。');
+   if(!a.uavDeliveryNarrated&&!S.timelineReview){a.uavDeliveryNarrated=true;speak('物资由无人机从安全转运点运至安置点。',true);}
   }
-  else if(task.mode==='team'&&!a.teamRelayLogged){a.teamRelayLogged=true;addLog('back','应急人员接驳队','首批无人机投送完成并确认送达，救援人员现从安全转运点出发，接续运送后续物资。');}
   return;
  }
  if(task.mode!=='truck'||task.stockDispatched)return;
@@ -218,6 +221,11 @@ function logisticsTaskDeparted(task){
 }
 function logisticsTaskArrived(task){
  const a=S.logistics;if(!a||!a.active||task.confirmed)return;
+ if(task.returning){
+  task.confirmed=true;task.confirmedAt=Math.floor(S.sim);
+  addLog('back','无人机运输分队','无人机 <b>'+uavCallsign(task,0)+'</b> 已返回沙坝村安全转运点，待命装载下一批物资。');
+  return;
+ }
  if(!task.preposition){
   if(!task.stockDispatched)throw new Error('物资尚未完成出库，不能确认签收：'+task.id);
   if(task.finalDelivery)for(const [mat,qty] of Object.entries(logisticsTotals(task.manifest))){
@@ -416,8 +424,6 @@ function planDeliveryRoutes(){
  a.fastest=[...a.routes].sort((x,y)=>x.dur-y.dur)[0];
  const airDist=havKm(LOGISTICS_CFG.handoff,INCIDENT.epic);
  a.airRoute={via:[LOGISTICS_CFG.handoff,INCIDENT.epic],edges:[],dist:airDist,dur:airDist/LOGISTICS_CFG.speed.uav+1,mode:'uav'};
- a.teamRoute=roadPath(LOGISTICS_CFG.handoff,INCIDENT.epic,'team');
- if(!a.teamRoute)throw new Error('应急人员步行接驳通道不可达');
  a.planned=true;S.routesDirty=true;loadLogisticsRoadRoutes(a);
 }
 function cargoWeight(manifest){return manifest.reduce((n,m)=>n+m.qty*SUPPLY_BY_ID[m.mat].kg,0);}
@@ -439,15 +445,8 @@ function logisticsTruckAssignments(a){
  });
 }
 function logisticsLastMileLoads(a){
- const pending=a.allocations.map(m=>({...m}));
- function take(mat,quantity){const out=[];for(const m of pending){if(m.mat!==mat)continue;const qty=Math.min(quantity,m.qty);if(qty){out.push({...m,qty});m.qty-=qty;quantity-=qty;}if(!quantity)break;}return out;}
- const urgent=[];
- for(const mat of ['hygiene','light','medical']){
-  const allocated=a.allocations.filter(m=>m.mat===mat).reduce((n,m)=>n+m.qty,0),limit=LOGISTICS_CFG.uavPriorityCaps[mat]??allocated;
-  urgent.push(...take(mat,Math.min(allocated,limit)));
- }
- const airLoads=[...new Set(urgent.map(m=>m.warehouse))].flatMap(id=>packCargo(urgent.filter(m=>m.warehouse===id),LOGISTICS_CFG.uavKg));
- return{pending,airLoads};
+ const airLoads=packCargo(a.allocations.filter(m=>m.qty>0),LOGISTICS_CFG.uavKg);
+ return{airLoads};
 }
 function buildCooperativeTasks(){
  const a=S.logistics;if(a.tasksBuilt)return;
@@ -456,8 +455,8 @@ function buildCooperativeTasks(){
 function task(depot,target,mode,manifest,route,start,dependsOn=[],finalDelivery=true,estimatedStart=start,truckAssignment=null){
   const t={id:'L'+(++sequence),depot,target,mode,manifest,mat:'mixed',qty:manifest.reduce((n,m)=>n+m.qty,0),
    via:[...route.via],edges:[...route.edges],geo:route.geo?[...route.geo]:null,dist:route.dist,dur:route.dur,start,estimatedStart,status:'wait',dependsOn,finalDelivery,
-   weight:cargoWeight(manifest),capacity:mode==='truck'?LOGISTICS_CFG.truckKg:mode==='uav'?LOGISTICS_CFG.uavKg:LOGISTICS_CFG.teamKg,
-   carrier:mode==='truck'?truckAssignment.carrier:mode==='uav'?'前置无人机分队':'应急人员接驳队',
+   weight:cargoWeight(manifest),capacity:mode==='truck'?LOGISTICS_CFG.truckKg:LOGISTICS_CFG.uavKg,
+   carrier:mode==='truck'?truckAssignment.carrier:'三机往返运输分队',
    licensePlate:mode==='truck'?truckAssignment.licensePlate:null};
   S.tasks.push(t);return t;
  }
@@ -465,13 +464,13 @@ function task(depot,target,mode,manifest,route,start,dependsOn=[],finalDelivery=
   const r=assignment.route;
   (truckIds[r.depot]??=[]).push(task(r.depot,LOGISTICS_CFG.handoff,'truck',assignment.manifest,r,8,[],false,8,assignment).id);
  }
- const {pending,airLoads}=logisticsLastMileLoads(a);
+  const {airLoads}=logisticsLastMileLoads(a);
  function dependencies(manifest){return [...new Set(manifest.flatMap(m=>truckIds[m.warehouse]||[]))];}
  function readyAt(ids,playback=true){
   const predecessors=S.tasks.filter(t=>ids.includes(t.id));
   return Math.max(8,...predecessors.map(t=>playback?t.start+taskPlaybackDuration(t):t.estimatedStart+t.dur))+2;
  }
- const airPrepIds=airLoads.map((_,index)=>{
+  const airPrepIds=Array.from({length:Math.min(UAV_FLEET_SIZE,airLoads.length)},(_,index)=>{
   const launch=launchPointFor();
   if(!launch)throw new Error('未配置无人机起降点');
   const distance=havKm(launch,LOGISTICS_CFG.handoff);
@@ -479,22 +478,23 @@ function task(depot,target,mode,manifest,route,start,dependsOn=[],finalDelivery=
   const prep=task(launch,LOGISTICS_CFG.handoff,'uav',[],route,8,[],false);prep.preposition=true;prep.prepositionIndex=index;prep.vehicleNo=index+1;
   return prep.id;
  });
- const firstWaveUavIds=[];
+  const drones=airPrepIds.map((prepId,index)=>({vehicleNo:index+1,prepId,lastTaskId:null,availableAt:8,estimatedAvailableAt:8}));
  airLoads.forEach((manifest,index)=>{
-  const deps=[...new Set([...dependencies(manifest),airPrepIds[index]])];
+   const truckDependencies=dependencies(manifest);
+   const candidates=drones.map(drone=>{
+    const previousId=drone.lastTaskId||drone.prepId,deps=[...new Set([...truckDependencies,previousId])];
+    return{drone,deps,start:Math.max(readyAt(deps),drone.availableAt),estimatedStart:Math.max(readyAt(deps,false),drone.estimatedAvailableAt)};
+   }).sort((x,y)=>x.start-y.start||x.drone.vehicleNo-y.drone.vehicleNo);
+   const {drone,deps}=candidates[0],stagger=index<UAV_FLEET_SIZE?index*1.5:0;
+   const start=candidates[0].start+stagger,estimatedStart=candidates[0].estimatedStart+stagger;
   if(cargoWeight(manifest)>LOGISTICS_CFG.uavKg)throw new Error('无人机载荷超限');
-  /* 多批投送按 2.5 分钟错时起飞，避免两架无人机沿同一航线完全重叠。 */
-  const stagger=index*2.5;
-  const t=task(LOGISTICS_CFG.handoff,INCIDENT.epic,'uav',manifest,a.airRoute,readyAt(deps)+stagger,deps,true,readyAt(deps,false)+stagger);
-  t.vehicleNo=index+1;firstWaveUavIds.push(t.id);
- });
- const relayLoads=packCargo(pending.filter(m=>m.qty>0),LOGISTICS_CFG.teamKg);
- const teamAvailable=Array(LOGISTICS_CFG.teamFleet).fill(8),estimatedTeamAvailable=Array(LOGISTICS_CFG.teamFleet).fill(8),cycle=a.teamRoute.dist/LOGISTICS_CFG.speed.team*2+5;let teamDispatchOrder=0;
- relayLoads.sort((x,y)=>readyAt(dependencies(x))-readyAt(dependencies(y))).forEach(manifest=>{
-  /* 首批无人机物资全部送达后，救援人员才接续投送后续批次，避免首批出现人员与无人机并行。 */
-  const deps=[...new Set([...dependencies(manifest),...firstWaveUavIds])],team=teamAvailable.indexOf(Math.min(...teamAvailable)),dispatchOffset=teamDispatchOrder++*1.5,start=Math.max(readyAt(deps)+3+dispatchOffset,teamAvailable[team]);
-  const estimatedTeam=estimatedTeamAvailable.indexOf(Math.min(...estimatedTeamAvailable)),estimatedStart=Math.max(readyAt(deps,false)+3+dispatchOffset,estimatedTeamAvailable[estimatedTeam]);
-  const t=task(LOGISTICS_CFG.handoff,INCIDENT.epic,'team',manifest,a.teamRoute,start,deps,true,estimatedStart);t.vehicleNo=team+1;teamAvailable[team]=start+cycle;estimatedTeamAvailable[estimatedTeam]=estimatedStart+cycle;
+   const t=task(LOGISTICS_CFG.handoff,INCIDENT.epic,'uav',manifest,a.airRoute,start,deps,true,estimatedStart);
+   t.vehicleNo=drone.vehicleNo;
+   const returnRoute={via:[INCIDENT.epic,LOGISTICS_CFG.handoff],edges:[],dist:a.airRoute.dist,dur:a.airRoute.dur,mode:'uav'};
+   const turnaround=.5,returnStart=start+taskPlaybackDuration(t)+turnaround,returnEstimatedStart=estimatedStart+t.dur+turnaround;
+   const returning=task(INCIDENT.epic,LOGISTICS_CFG.handoff,'uav',[],returnRoute,returnStart,[t.id],false,returnEstimatedStart);
+   returning.vehicleNo=drone.vehicleNo;returning.returning=true;
+   drone.lastTaskId=returning.id;drone.availableAt=returnStart+taskPlaybackDuration(returning)+2;drone.estimatedAvailableAt=returnEstimatedStart+returning.dur+2;
  });
  a.quantityCheck=logisticsQuantityCheck(a);
  if(!a.quantityCheck.ok)throw new Error('物资运输方案数量核对未通过：'+a.quantityCheck.errors.join('；'));
@@ -550,14 +550,13 @@ function logisticsConfirmationMarkup(step,a){
   return '<ul>'+rows+'</ul>'+(shortages.length?'<p class="confirm-shortage">库存缺口：'+shortages.map(m=>m.name+(a.unmet[m.mat]||0)+m.unit).join('、')+'</p>':'<p class="confirm-shortage ok">库存满足本次需求。</p>');
  }
  const truckRows=logisticsTruckAssignments(a).map(dispatch=>'<li><b>'+dispatch.carrier.replace('协同运力','')+'</b><span>'+dispatch.licensePlate+'</span></li>').join('');
- const lastMileLoads=logisticsLastMileLoads(a).airLoads,airCount=Math.max(2,lastMileLoads.length);
- const urgent=Object.entries(lastMileLoads.flat().reduce((totals,m)=>{totals[m.mat]=(totals[m.mat]||0)+m.qty;return totals;},{})).map(([mat,qty])=>SUPPLY_BY_ID[mat].name+qty+SUPPLY_BY_ID[mat].unit).join('、');
+  const airCount=UAV_FLEET_SIZE;
  const callsigns=Array.from({length:airCount},(_,i)=>uavCallsign({vehicleNo:i+1},i)).join('、');
  const routeChanges=a.routes.map(r=>'<li><b>'+r.name+'</b><span class="'+(r.detoured?'detoured':'clear')+'">'+(r.detoured?'改经S105绕行':'保持原路线')+'</span></li>').join('');
  return '<div class="confirm-route-list"><ul>'+a.routes.map(r=>'<li><div class="confirm-route-heading"><b>'+r.name+'</b><span class="confirm-route-status '+(r.detoured?'detour':'clear')+'">'+(r.detoured?'S105绕行':'道路畅通')+'</span></div><p>'+r.dist.toFixed(1)+' km <i>·</i> 约 '+Math.ceil(r.dur)+' 分钟</p></li>').join('')+'</ul></div>'
   +'<div class="confirm-collaboration-grid"><div class="confirm-collaboration-left"><section class="confirm-collaboration"><h3>运力协同</h3><p>本地运力不足，协调顺丰、EMS共同配送。</p><ul>'+truckRows+'</ul></section>'
   +'<section class="confirm-collaboration confirm-road-changes"><h3>道路事故与改道</h3><p>原定规划道路发生货车侧翻，无法通行；受影响线路改道如下：</p><ul>'+routeChanges+'</ul></section></div>'
-  +'<section class="confirm-collaboration confirm-collaboration-drone"><h3>无人机协同</h3><p class="confirm-reason"><b>无人机协同原因</b><strong class="confirm-reason-emphasis">S105山体滑坡及道路阻塞影响车辆直达，由安全转运点跨越受阻路段投送急需物资'+(urgent?'（'+urgent+'）':'')+'。</strong></p><p class="confirm-unit-meta"><b>机型</b> DJI FlyCart 100 · '+airCount+'架</p><p class="confirm-unit-meta"><b>编号</b> '+callsigns+'</p></section></div>';
+   +'<section class="confirm-collaboration confirm-collaboration-drone"><h3>无人机协同</h3><p class="confirm-reason"><b>无人机协同原因</b><strong class="confirm-reason-emphasis">S105山体滑坡及道路阻塞影响车辆直达，全部已匹配物资由安全转运点的三架无人机分批往返接驳。</strong></p><p class="confirm-unit-meta"><b>机型</b> FlyCart 200 · '+airCount+'架</p><p class="confirm-unit-meta"><b>编号</b> '+callsigns+'</p></section></div>';
 }
 function openLogisticsConfirmation(step){
  const a=S.logistics;if(!a||a.confirmationPending!==null||a.confirmedStages.has(step))return;
@@ -716,7 +715,7 @@ function startRouteIncidentSequence(a=S.logistics){
  if(typeof setRouteIncidentCameraReady==='function')setRouteIncidentCameraReady(true);
  if(!a.planned)planDeliveryRoutes();
  if(!a.routeCauseNarrated){
-  const utterance=speak('1、3号点位发生山体滑坡，末端道路受阻，急需物资由无人机接驳，其他物资由救援人员接驳。原定规划道路发生事故，无法通行，系统正在重新规划。',true);
+  const utterance=speak('1、3号点位发生山体滑坡，末端物资由无人机从安全转运点送至安置点；原定道路发生交通事故，正在调整路线。',true);
   if(utterance){
    a.routeCauseNarrationPending=true;
    const complete=()=>{if(S.logistics===a){a.routeCauseNarrationPending=false;a.routeCauseNarrated=true;maybeActivateRouteRollover(a);drawLogisticsCalculation();drawCtl();}};
@@ -841,8 +840,8 @@ function drawLogisticsCalculation(){
  const matching=S.step<=3,routeDoneCount=(a.initialRoutesResolved?1:0)+(a.scanned?1:0)+(a.roadRoutesResolved&&a.routeRolloverActivated?1:0),progress=S.step>=7?100:matching?Math.min(100,Math.floor(((S.step-1)+Math.min(1,a.stageElapsed/LOGISTICS_CFG.waits[S.step]))/3*100)):S.step===4?33+Math.floor(((routeDoneCount+(routeDoneCount<3?Math.min(1,a.stageElapsed/LOGISTICS_CFG.waits[S.step]):0))/3)*33):Math.min(100,Math.floor(((S.step-4)+Math.min(1,a.stageElapsed/LOGISTICS_CFG.waits[S.step]))/3*33)+33);
  const title=S.step>=7?'协同运输任务执行':matching?'村委会上报物资清单核对':'AI 路线规划计算';
  const detoured=a.routes.filter(r=>r.detoured).length;
- const routeSummary=S.step>=7?'按确认方案分批运输':a.tasksBuilt?'公路＋无人机首批投送＋人员后续接力':a.routeRolloverActivated&&a.planned?detoured+'条受影响路线经S105绕行':a.initialRoutesReady?'初始配送路线已生成':'路线与阻断影响同步分析中';
- const routeSummaryDetail=S.step>=7?'车辆、无人机与救援人员按批次执行投送。':a.tasksBuilt?'首批约'+Math.ceil(a.firstArrival)+'分钟到村 · 全部约'+Math.ceil(a.lastArrival)+'分钟完成':a.roadRoutesResolved&&a.routeRolloverActivated?'山体滑坡及原定规划道路事故路段已纳入核验，受影响线路经S105绕行。':a.routeIncidentSequenceStarted?'现场影像核验道路阻断，系统正在计算受影响线路的绕行方案。':a.initialRoutesVisible?'蓝色、紫色初始路线已展示，等待现场视频核验后更新。':'路线规划开始，正在生成仓库至转运点初始路线。';
+ const routeSummary=S.step>=7?'按确认方案分批运输':a.tasksBuilt?'干线车辆运输＋三架无人机往返投送':a.routeRolloverActivated&&a.planned?detoured+'条受影响路线经S105绕行':a.initialRoutesReady?'初始配送路线已生成':'路线与阻断影响同步分析中';
+ const routeSummaryDetail=S.step>=7?'车辆将物资送至安全转运点，三架无人机轮流往返投送。':a.tasksBuilt?'首批约'+Math.ceil(a.firstArrival)+'分钟到村 · 全部约'+Math.ceil(a.lastArrival)+'分钟完成':a.roadRoutesResolved&&a.routeRolloverActivated?'山体滑坡及原定规划道路事故路段已纳入核验，受影响线路经S105绕行。':a.routeIncidentSequenceStarted?'现场影像核验道路阻断，系统正在计算受影响线路的绕行方案。':a.initialRoutesVisible?'蓝色、紫色初始路线已展示，等待现场视频核验后更新。':'路线规划开始，正在生成仓库至转运点初始路线。';
  const rows=logisticsRows();
  document.getElementById('assessmentCard').innerHTML='<div class="assessment-head"><span>'+title+'</span><span class="assessment-status">'+(S.paused?'已暂停':S.step>=7?'方案已执行':'计算中')+'</span></div>'
   +'<div class="assessment-sub">物资调度与配送<br>'+(S.step>=7?'曲山镇沙坝村 · 按已确认方案执行投送':'曲山镇沙坝村 · '+a.peopleCount+'人已就近安置 · 村委会上报物资不足')+'</div>'
@@ -893,7 +892,7 @@ function drawLogisticsHeading(){
  const substage=logisticsSubstageText(),capacityMatching=S.step===6||S.step===4&&a.capacityMatchingStarted,key=[name,substage,a.peopleCount,capacityMatching].join('|');
  // 子阶段发生变化时才更新横幅，避免计算轮询反复重建标题、触发辅助阅读播报。
  if(host.dataset.headingKey!==key||!host.firstElementChild){
-  const context=S.step>=7?'沙坝村 · 按确认方案执行车辆与无人机协同投送':capacityMatching?'沙坝村 · 本地运力不足 · 顺丰、EMS车辆协同 · 无人机末端接驳':S.step<=3?'沙坝村 · '+a.peopleCount+'人已就近安置 · 村委会上报物资不足 · 需求清单核对 → 就近检索 → 库存匹配':'沙坝村 · 村委会上报物资清单 · 核验道路状态 · 测算时效并确认路线';
+  const context=S.step>=7?'沙坝村 · 干线车辆送至安全转运点 · 三架无人机往返投送':capacityMatching?'沙坝村 · 本地运力不足 · 顺丰、EMS车辆协同 · 三架无人机末端接驳':S.step<=3?'沙坝村 · '+a.peopleCount+'人已就近安置 · 村委会上报物资不足 · 需求清单核对 → 就近检索 → 库存匹配':'沙坝村 · 村委会上报物资清单 · 核验道路状态 · 测算时效并确认路线';
   host.innerHTML='<div class="act">物资调度与配送</div><h2><span class="logistics-stage-name">'+name+'</span><span class="logistics-substage">· '+substage+'</span></h2><p>'+context+'</p>';
   host.dataset.headingKey=key;
  }
@@ -1093,20 +1092,18 @@ function drawLogisticsMap(){
   });
  }
  if(S.step>=6&&a.planned){
-  const air=a.airRoute,team=a.teamRoute;
+  const air=a.airRoute;
   if(S.step>=7)S.tasks.filter(t=>t.preposition&&['run','hold'].includes(t.status)).forEach((t,i)=>{
    L.polyline(t.via.map(ll),{color:['#50e3ed','#72d9ff','#74f0d3'][i%3],weight:2.6,dashArray:'4 6',opacity:.84,lineCap:'round',interactive:false}).addTo(M.routeL);
   });
   L.polyline(air.via.map(ll),{color:'#50e3ed',weight:3,dashArray:'5 6'}).addTo(M.routeL);
-  L.polyline(team.via.map(ll),{color:'#eebd72',weight:3.5,dashArray:'4 5'}).addTo(M.routeL);
   if(S.step<7){
    const size=M.map.getSize(),mapRect=M.map.getContainer().getBoundingClientRect(),village=M.map.latLngToContainerPoint(ll(INCIDENT.epic));
    const panelRect=document.querySelector('.panel-right')?.getBoundingClientRect(),panelLeft=panelRect?panelRect.left-mapRect.left:size.x-350;
    const dockWidth=Math.max(160,Math.min(320,panelLeft-32)),dockX=Math.max(12,panelLeft-dockWidth-14);
    const labels=[
-    {anchor:routePosition(air,.65),color:'#50e3ed',html:'<div class="route-badge route-dock" style="--route-color:#50e3ed;--dock-width:'+dockWidth+'px"><b>无人机 · 先期投送</b><br>'+air.dist.toFixed(1)+' km · '+Math.ceil(air.dur)+' 分钟</div>'},
-    {anchor:routePosition(team,.5),color:'#eebd72',html:'<div class="route-badge route-dock" style="--route-color:#eebd72;--dock-width:'+dockWidth+'px"><b>救援人员 · 第二批起接驳</b><br>'+team.dist.toFixed(1)+' km · '+Math.ceil(team.dur)+' 分钟</div>'},
-    {anchor:ll(LOGISTICS_CFG.handoff),color:'#eebd72',html:'<div class="transfer-label route-dock" style="--route-color:#eebd72;--dock-width:'+dockWidth+'px">沙坝村安全转运点<br>无人机首批投送 → 人员后续接驳</div>'}
+     {anchor:routePosition(air,.65),color:'#50e3ed',html:'<div class="route-badge route-dock" style="--route-color:#50e3ed;--dock-width:'+dockWidth+'px"><b>三架无人机往返接驳</b><br>'+air.dist.toFixed(1)+' km · 单程约 '+Math.ceil(air.dur)+' 分钟</div>'},
+     {anchor:ll(LOGISTICS_CFG.handoff),color:'#50e3ed',html:'<div class="transfer-label route-dock" style="--route-color:#50e3ed;--dock-width:'+dockWidth+'px">沙坝村安全转运点<br>三架无人机轮流装载、往返投送</div>'}
    ];
    const dockStep=86,dockSpan=(labels.length-1)*dockStep,dockInset=35,callouts=[];
    const maxDockY=Math.max(dockInset,size.y-dockInset-dockSpan);

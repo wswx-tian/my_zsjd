@@ -34,8 +34,7 @@ function finish(context){
  let ticks=0;
  while(run(context,'S.step<9')&&ticks++<10000){
   run(context,'transportTick()');
-  assert.equal(run(context,"S.tasks.some(t=>t.finalDelivery&&t.mode==='team'&&t.status==='run')&&S.tasks.some(t=>t.finalDelivery&&t.mode==='uav'&&t.status!=='done')"),false,
-   'Rescue staff must remain off the last-mile route until the first-wave UAV deliveries finish');
+  assert.equal(run(context,"S.tasks.some(t=>t.mode==='team')"),false,'Personnel delivery tasks must not be created');
   const check=run(context,'logisticsQuantityCheck()');
   assert.equal(check.ok,true,check.errors.join('; '));
   if(run(context,"S.tasks.every(t=>t.status==='done')"))break;
@@ -48,7 +47,7 @@ function report(context){
  return JSON.parse(run(context,`JSON.stringify({
   people:S.logistics.peopleCount,needs:S.logistics.needs,allocations:S.logistics.allocations,
   warehouses:matchedWarehouseIds().map(id=>({id,name:ALL[id].name,initial:LOGISTICS_CFG.inventory[id],remaining:S.logistics.onHandStock[id]})),
-  tasks:S.tasks.map(t=>({id:t.id,mode:t.mode,preposition:!!t.preposition,finalDelivery:!!t.finalDelivery,depot:t.depot,target:t.target,
+  tasks:S.tasks.map(t=>({id:t.id,mode:t.mode,preposition:!!t.preposition,returning:!!t.returning,finalDelivery:!!t.finalDelivery,depot:t.depot,target:t.target,
    weight:t.weight,capacity:t.capacity,manifest:t.manifest,status:t.status,confirmed:!!t.confirmed})),
   check:S.logistics.quantityCheck,logs:S.logs.map(l=>l.txt)
  })`));
@@ -64,7 +63,10 @@ function report(context){
  const villageList=run(context,'logisticsConfirmationMarkup(1,S.logistics)');
  assert.match(villageList,/村委会上报/);assert.doesNotMatch(villageList,/AI|救生艇/);
  const routePlan=run(context,'logisticsConfirmationMarkup(5,S.logistics)');
- for(const detail of ['顺丰速运绵阳','中国邮政EMS','川B12V31','川B34121','DJI FlyCart 100','SC_MY_QS_A003_01','SC_MY_QS_A003_02','协同原因','山体滑坡'])assert.ok(routePlan.includes(detail),'Route confirmation should include '+detail);
+ for(const detail of ['顺丰速运绵阳','中国邮政EMS','川B12V31','川B34121','FlyCart 200','SC_MY_QS_A003_01','SC_MY_QS_A003_02','SC_MY_QS_A003_03','协同原因','山体滑坡'])assert.ok(routePlan.includes(detail),'Route confirmation should include '+detail);
+ assert.doesNotMatch(routePlan,/单机载重|飞行速度/,'The UAV capacity/speed detail row should stay hidden from the confirmation');
+ assert.equal(run(context,'LOGISTICS_CFG.uavKg'),200,'UAV payload capacity should double to 200 kg');
+ assert.equal(run(context,'LOGISTICS_CFG.speed.uav'),2.6,'UAV route speed should double to 2.6 km/min');
   for(const [mat,qty] of Object.entries(expected))assert.equal(run(context,`S.logistics.needs.find(m=>m.mat==='${mat}').qty`),qty);
   const beforePause=run(context,'JSON.stringify([S.sim,S.logistics.onHandStock])');
   run(context,'S.paused=true;transportTick();S.paused=false;');
@@ -77,7 +79,7 @@ function report(context){
   if(speed===2)defaultReport=report(context);
  }
  const initialReport=defaultReport;
- assert.equal(initialReport.tasks.filter(t=>t.mode==='uav'&&t.finalDelivery).length,2);
+ assert.equal(initialReport.tasks.filter(t=>t.mode==='uav'&&t.finalDelivery).length,4);
  const waveCheck=await setup({speed:2});
  const prepositionCheck=JSON.parse(run(waveCheck,`JSON.stringify((()=>{
   const aircraft=S.tasks.filter(t=>t.preposition),statuses=aircraft.map(t=>t.status);
@@ -85,36 +87,42 @@ function report(context){
   aircraft.forEach((t,i)=>t.status=statuses[i]);
   return{vehicleNos:aircraft.map(t=>t.vehicleNo),callsigns:aircraft.map(t=>uavCallsign(t,S.tasks.indexOf(t))),positions};
  })())`));
- assert.equal(prepositionCheck.vehicleNos.length,2,'Each first-wave UAV needs its own launch-point preposition flight');
- assert.deepEqual(prepositionCheck.vehicleNos,[1,2],'Preposition flights must retain their matching 001/002 callsigns');
- assert.deepEqual(prepositionCheck.callsigns,['SC_MY_QS_A003_01','SC_MY_QS_A003_02'],'Both callsigns must be rendered during launch-point departure');
- assert.notDeepEqual(prepositionCheck.positions[0],prepositionCheck.positions[1],'Both launch aircraft must render separately instead of overlapping');
- const teamPlan=JSON.parse(run(waveCheck,`JSON.stringify(S.tasks.filter(t=>t.mode==='team').map(t=>({vehicleNo:t.vehicleNo,name:rescueTeamName(t),start:t.start})))`));
- assert.equal(teamPlan.length,3,'The 96-person scenario should use only three rescue-team dispatches');
- assert.equal(new Set(teamPlan.map(t=>t.vehicleNo)).size,3,'Each moving rescue icon must represent one of three rescue groups');
- assert.equal(new Set(teamPlan.map(t=>t.name)).size,3,'Each rescue group must have one stable label');
- const teamStarts=teamPlan.map(t=>t.start).sort((a,b)=>a-b);
- for(let i=1;i<teamStarts.length;i++)assert.ok(teamStarts[i]-teamStarts[i-1]>=1.499,'Rescue teams should stagger departure to keep icons apart');
- const wavePlan=JSON.parse(run(waveCheck,`JSON.stringify({
-  uav:S.tasks.filter(t=>t.finalDelivery&&t.mode==='uav').map(t=>({id:t.id,end:t.start+taskPlaybackDuration(t),estimatedEnd:t.estimatedStart+t.dur})),
-  teams:S.tasks.filter(t=>t.finalDelivery&&t.mode==='team').map(t=>({id:t.id,start:t.start,estimatedStart:t.estimatedStart,dependsOn:t.dependsOn}))
- })`));
- const droneIds=wavePlan.uav.map(t=>t.id),latestDroneEnd=Math.max(...wavePlan.uav.map(t=>t.end)),latestEstimatedDroneEnd=Math.max(...wavePlan.uav.map(t=>t.estimatedEnd));
- assert.ok(droneIds.length>0&&wavePlan.teams.length>0,'Both first-wave UAV and follow-up staff tasks must be planned');
- for(const t of wavePlan.teams){
-  assert.ok(droneIds.every(id=>t.dependsOn.includes(id)),t.id+' must wait for every first-wave UAV delivery');
-  assert.ok(t.start>=latestDroneEnd+4.999,t.id+' must leave a visible gap after UAV delivery');
-  assert.ok(t.estimatedStart>=latestEstimatedDroneEnd+4.999,t.id+' estimated schedule must preserve the second wave');
+ assert.equal(prepositionCheck.vehicleNos.length,3,'All three UAVs need launch-point preposition flights');
+ assert.deepEqual(prepositionCheck.vehicleNos,[1,2,3],'Preposition flights must retain their matching 001/002/003 callsigns');
+ assert.deepEqual(prepositionCheck.callsigns,['SC_MY_QS_A003_01','SC_MY_QS_A003_02','SC_MY_QS_A003_03'],'All UAV callsigns must be shown');
+ assert.equal(new Set(prepositionCheck.positions.map(p=>JSON.stringify(p))).size,3,'All three launch aircraft must render separately');
+ const shuttlePlan=JSON.parse(run(waveCheck,`JSON.stringify((()=>{
+  const deliveries=S.tasks.filter(t=>t.finalDelivery&&t.mode==='uav');
+  const returns=S.tasks.filter(t=>t.returning);
+  return{deliveries:deliveries.map(t=>({id:t.id,vehicleNo:t.vehicleNo,start:t.start,dependsOn:t.dependsOn})),
+   returns:returns.map(t=>({id:t.id,vehicleNo:t.vehicleNo,start:t.start,dependsOn:t.dependsOn})),
+   aircraft:[...new Set(deliveries.map(t=>t.vehicleNo))]};
+ })())`));
+ assert.equal(shuttlePlan.aircraft.length,3,'All three UAVs must carry last-mile cargo');
+ assert.equal(shuttlePlan.returns.length,shuttlePlan.deliveries.length,'Every loaded trip must be followed by an empty return leg');
+ for(const delivery of shuttlePlan.deliveries){
+  const back=shuttlePlan.returns.find(t=>t.dependsOn.includes(delivery.id));
+  assert.ok(back,delivery.id+' must have an empty return flight');
+  assert.equal(back.vehicleNo,delivery.vehicleNo,'The return leg must use the same UAV');
+  assert.ok(back.start>=delivery.start,'The UAV cannot return before delivering its load');
  }
+ for(const vehicleNo of shuttlePlan.aircraft){
+  const deliveries=shuttlePlan.deliveries.filter(t=>t.vehicleNo===vehicleNo).sort((a,b)=>a.start-b.start);
+  for(let i=1;i<deliveries.length;i++){
+   const previousReturn=shuttlePlan.returns.find(t=>t.dependsOn.includes(deliveries[i-1].id));
+   assert.ok(deliveries[i].dependsOn.includes(previousReturn.id),'A UAV must return to the transfer point before its next delivery');
+  }
+ }
+ assert.ok(run(waveCheck,"Math.abs(taskPlaybackDuration(S.tasks.find(t=>t.finalDelivery&&t.mode==='uav'))/taskPlaybackDuration(S.tasks.find(t=>t.mode==='truck'))-.5)<.001"),'UAV movement animation should run at twice the prior speed');
  assert.equal(initialReport.tasks.filter(t=>t.mode==='uav'&&t.finalDelivery).flatMap(t=>t.manifest).filter(m=>m.mat==='medical').reduce((n,m)=>n+m.qty,0),2);
- assert.equal(initialReport.tasks.filter(t=>t.mode==='uav'&&t.finalDelivery).flatMap(t=>t.manifest).filter(m=>m.mat==='hygiene').reduce((n,m)=>n+m.qty,0),16);
+ assert.equal(initialReport.tasks.filter(t=>t.mode==='uav'&&t.finalDelivery).flatMap(t=>t.manifest).filter(m=>m.mat==='hygiene').reduce((n,m)=>n+m.qty,0),20);
 
  const alternate=await setup({configure:'LOGISTICS_CFG.inventory.P04.hygiene=0;LOGISTICS_CFG.inventory.P04.light=0;'});
  assert.equal(run(alternate,"S.tasks.filter(t=>t.finalDelivery&&t.mode==='uav').flatMap(t=>t.manifest).some(m=>m.mat==='hygiene'&&m.warehouse==='P03')"),true,'UAV loads must follow actual matching, including another warehouse');
  finish(alternate);assert.equal(run(alternate,'S.step'),9);
 
  const scaled=await setup({people:151});
- assert.ok(run(scaled,"new Set(S.tasks.filter(t=>t.mode==='team').map(t=>t.vehicleNo)).size<=LOGISTICS_CFG.teamFleet"),'Scaled dispatch must reuse no more than three rescue groups');
+ assert.equal(run(scaled,"S.tasks.some(t=>t.mode==='team')"),false,'Scaled demand must never create personnel delivery tasks');
  finish(scaled);
  assert.equal(run(scaled,'S.step'),9);assert.ok(run(scaled,'matchedWarehouseIds().length')>=3);
  assert.equal(run(scaled,'S.logistics.needs.length'),6,'The supply plan must not include rescue boats as transfer cargo');
@@ -140,6 +148,6 @@ function report(context){
  assert.equal(run(tampered,'S.logistics.quantityCheck.ok'),false);
 
  if(process.argv[2])fs.writeFileSync(path.resolve(process.argv[2]),JSON.stringify(defaultReport,null,2)+'\n');
- console.log('PASS: first-wave UAV deliveries precede staff dispatch by 5+ sim minutes; 96-person dispatch at 1x/2x/4x; 6 materials conserved at every tick; replay, pause, dynamic warehouses, 151-person rounding, shortages, early dispatch and tampered-source/receipt checks.');
- console.log(JSON.stringify({needs:expected,truckBatches:defaultReport.tasks.filter(t=>t.mode==='truck').length,lastMileBatches:defaultReport.tasks.filter(t=>t.finalDelivery).length,emptyUavFlights:defaultReport.tasks.filter(t=>t.preposition).length,uavFirstWave:wavePlan.uav.length,staffFollowup:wavePlan.teams.length,staffGapMin:+Math.min(...wavePlan.teams.map(t=>t.estimatedStart-latestEstimatedDroneEnd)).toFixed(1),quantityCheck:defaultReport.check.ok}));
+ console.log('PASS: 3 UAVs shuttle all last-mile cargo with empty return legs; no personnel delivery; 200 kg payload and 2x flight speed; 96-person scenario at 1x/2x/4x; 6 materials conserved at every tick; replay, pause, dynamic warehouses, 151-person rounding, shortages, early dispatch and tampered-source/receipt checks.');
+ console.log(JSON.stringify({needs:expected,truckBatches:defaultReport.tasks.filter(t=>t.mode==='truck').length,lastMileBatches:defaultReport.tasks.filter(t=>t.finalDelivery).length,emptyUavFlights:defaultReport.tasks.filter(t=>t.returning).length,prepositionFlights:defaultReport.tasks.filter(t=>t.preposition).length,uavFleet:shuttlePlan.aircraft.length,quantityCheck:defaultReport.check.ok}));
 })().catch(error=>{console.error(error);process.exitCode=1;});

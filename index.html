@@ -156,16 +156,14 @@ body{
   background:rgba(5,19,37,.96);box-shadow:0 3px 9px rgba(0,0,0,.48);color:#ccecff;
   font-size:12px;font-weight:650;line-height:1.3;white-space:nowrap;text-shadow:0 1px 2px #000}
 .mk.unit .unit-info b{color:#fff;font-size:13px;font-variant-numeric:tabular-nums}
-.mk.unit.team .unit-info{min-width:0;width:max-content;max-width:250px;border-color:rgba(238,189,114,.82);color:#ffe2b0}
-.mk.unit.team-label-slot-1 .team-unit-info,.mk.unit.team-label-slot-3 .team-unit-info{left:auto;right:23px;transform-origin:right top}
-.mk.unit.team-label-slot-2 .team-unit-info,.mk.unit.team-label-slot-3 .team-unit-info{top:14px}
 .mk.uav .mk-ic{width:32px;height:32px;border-radius:50%;color:#fff;border:2px solid #fff;background:#06b6d4;
   box-shadow:0 0 0 3px rgba(6,182,212,.4),0 4px 10px rgba(6,182,212,.5)}
 .mk.unit.uav .mk-ic{animation:uavHover 1.1s ease-in-out infinite}
 .mk.unit.uav.uav-idle .mk-ic{animation:none}
 .mk.unit.uav-preposition .uav-state{position:absolute;left:18px;top:-18px;z-index:4;scale:var(--map-label-scale,1);transition:scale .16s ease;transform-origin:left top;padding:3px 7.5px;border:1px solid rgba(80,227,237,.55);border-radius:8px;
   background:rgba(5,19,37,.96);box-shadow:0 3px 9px rgba(0,0,0,.42);color:#a7f5ff;font-size:12px;font-weight:700;line-height:1.25;white-space:nowrap}
-.mk.unit.uav-preposition-second .uav-unit-info{left:auto;right:23px;transform-origin:right top}
+.mk.unit.uav-preposition-second .uav-unit-info,.mk.unit.uav-vehicle-second .uav-unit-info{left:auto;right:23px;transform-origin:right top}
+.mk.unit.uav-vehicle-third .uav-unit-info{left:23px;top:42px;transform-origin:left top}
 @keyframes uavHover{50%{transform:translateY(-3px);box-shadow:0 0 0 5px rgba(6,182,212,.18),0 7px 13px rgba(6,182,212,.55)}}
 @keyframes afPulse{0%{box-shadow:0 0 0 0 rgba(225,29,72,.65),0 6px 16px rgba(225,29,72,.5)}100%{box-shadow:0 0 0 42px rgba(225,29,72,0),0 6px 16px rgba(225,29,72,.5)}}
 .mk-label{position:absolute;left:15px;top:-5px;scale:var(--map-label-scale,1);transition:scale .16s ease;transform-origin:left top;white-space:nowrap;font-size:15px;font-weight:600;
@@ -980,7 +978,7 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
   const a=t._anim,prog=taskProgress(t);
   if(t.preposition&&t.status==='hold'){
    /* 待命泊位取航线法向偏移：只横向让开转运点图钉，不沿航线回退，避免出现“倒退”观感。 */
-   const start=a.pts[0],end=a.pts[a.pts.length-1],slot=(t.prepositionIndex||0)%2?1:-1;
+   const start=a.pts[0],end=a.pts[a.pts.length-1],slot=(Number(t.vehicleNo)||1)-2;
    const dLat=end[0]-start[0],dLng=end[1]-start[1],len=Math.hypot(dLat,dLng)||1;
    return[end[0]+slot*.0006*(dLng/len),end[1]-slot*.0006*(dLat/len)];
   }
@@ -989,10 +987,11 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
    if(acc+a.segs[i]>=traveled){const r=a.segs[i]?(traveled-acc)/a.segs[i]:0;
     position=[p0[0]+(p1[0]-p0[0])*r,p0[1]+(p1[1]-p0[1])*r];break;}acc+=a.segs[i];}
   if(t.preposition){
-   const start=a.pts[0],end=a.pts[a.pts.length-1],slot=(t.prepositionIndex||0)%2?1:-1;
+   const start=a.pts[0],end=a.pts[a.pts.length-1],slot=(Number(t.vehicleNo)||1)-2;
    const dLat=end[0]-start[0],dLng=end[1]-start[1],len=Math.hypot(dLat,dLng)||1;
    return[position[0]+slot*.0006*(dLng/len),position[1]-slot*.0006*(dLat/len)];
   }
+  if(t.mode==='uav')return[position[0],position[1]+(((Number(t.vehicleNo)||1)-2)*.00055)];
   return position;
  },
  clearUnits(){
@@ -1012,16 +1011,15 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
     const info=isTruck
      ?'<div class="unit-info"><span>所属物流公司 <b>'+ (t.carrier||'应急运力') +'</b></span><span>车牌号 <b>'+ (t.licensePlate||'待编组') +'</b></span><span>距终点 <b class="unit-distance">--.- km</b> · 预计 <b class="unit-eta">-- 分</b></span><span>当前车速 <b class="unit-speed">'+unitTelemetrySpeed(t,i)+' km/h</b></span></div>'
      :t.mode==='uav'
-      ?'<div class="unit-info uav-unit-info"><span>无人机型号 <b>DJI FlyCart 100</b></span><span>无人机编号 <b>'+uavCallsign(t,i)+'</b></span><span>飞行状态 <b class="uav-flight-status">'+(t.preposition?'空机前置飞行':'载货投送中')+'</b></span><span>当前飞行速度 <b class="unit-speed">'+unitTelemetrySpeed(t,i)+' km/h</b></span></div>'
-      :t.mode==='team'?'<div class="unit-info team-unit-info">'+rescueTeamName(t)+'</div>':'';
-    const teamSlot=t.mode==='team'?((Number(t.vehicleNo)||i+1)-1)%4:0;
-    const ic=L.divIcon({className:'mk unit'+(t.mode==='uav'?' uav':'')+(t.preposition?' uav-preposition':'')+(t.preposition&&t.prepositionIndex%2===1?' uav-preposition-second':'')+(t.mode==='team'?' team team-label-slot-'+teamSlot:''),html:'<div class="mk-ic">'+(MK_ICON[t.mode]||MK_ICON.unit)+'</div>'+info,
+      ?'<div class="unit-info uav-unit-info"><span>无人机型号 <b>FlyCart 200</b></span><span>无人机编号 <b>'+uavCallsign(t,i)+'</b></span><span>飞行状态 <b class="uav-flight-status">'+(t.preposition?'空机前置飞行':t.returning?'空载返航中':'载货投送中')+'</b></span><span>当前飞行速度 <b class="unit-speed">'+unitTelemetrySpeed(t,i)+' km/h</b></span></div>'
+      :'';
+    const ic=L.divIcon({className:'mk unit'+(t.mode==='uav'?' uav':'')+(t.vehicleNo===2?' uav-vehicle-second':'')+(t.vehicleNo===3?' uav-vehicle-third':'')+(t.preposition?' uav-preposition':'')+(t.preposition&&t.prepositionIndex%2===1?' uav-preposition-second':''),html:'<div class="mk-ic">'+(MK_ICON[t.mode]||MK_ICON.unit)+'</div>'+info,
      iconSize:[0,0],iconAnchor:[0,0]});
     M.units[i]=L.marker([0,0],{icon:ic,interactive:false}).addTo(M.map);}
    M.units[i].setLatLng(M.unitLatLng(t));
    if(t.mode==='uav'){
     const state=M.units[i].getElement()?.querySelector('.uav-flight-status');
-    if(state)state.textContent=t.status==='hold'?'转运点待命':t.preposition?'空机前置飞行':'载货投送中';
+     if(state)state.textContent=t.status==='hold'?'转运点待命':t.preposition?'空机前置飞行':t.returning?'空载返航中':'载货投送中';
    }
    const unitElement=M.units[i].getElement();
    if(t.mode==='uav')unitElement?.classList.toggle('uav-idle',t.status==='hold');
@@ -1200,9 +1198,10 @@ function fbUnitPos(t){
  let position=pts[pts.length-1];
  for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],seg=Math.hypot(b.x-a.x,b.y-a.y);
   if(acc+seg>=traveled){const r=seg?(traveled-acc)/seg:0;position={x:a.x+(b.x-a.x)*r,y:a.y+(b.y-a.y)*r};break;}acc+=seg;}
- if(t.preposition){const start=pts[0],end=pts[pts.length-1],slot=(t.prepositionIndex||0)%2?1:-1;
+ if(t.preposition){const start=pts[0],end=pts[pts.length-1],slot=(Number(t.vehicleNo)||1)-2;
   const dx=end.x-start.x,dy=end.y-start.y,len=Math.hypot(dx,dy)||1;
   return{x:position.x+slot*5*(-dy/len),y:position.y+slot*5*(dx/len)};}
+ if(t.mode==='uav')return{x:position.x+((Number(t.vehicleNo)||1)-2)*4.5,y:position.y};
  return position;
 }
 function drawFallback(){
@@ -1294,7 +1293,7 @@ function drawFallback(){
     +'<text x="'+(x+14)+'" y="'+(y+52)+'" font-size="16" fill="#9eb5c9">直线 '+w.distance.toFixed(1)+' km · 库存核对中</text>';
   });
  }
-  if(S.step>=7)S.tasks.forEach((t,i)=>{if(t.status!=='run'&&t.status!=='hold')return;const p=fbUnitPos(t),c=t.mode==='uav'?'#38d6e6':t.mode==='team'?'#eebd72':'#7db8ff';
+  if(S.step>=7)S.tasks.forEach((t,i)=>{if(t.status!=='run'&&t.status!=='hold')return;const p=fbUnitPos(t),c=t.mode==='uav'?'#38d6e6':'#7db8ff';
   h+=`<circle cx="${p.x}" cy="${p.y}" r="6" fill="${c}" opacity=".25"/><circle cx="${p.x}" cy="${p.y}" r="3.2" fill="${c}"/>`;
   if(t.mode==='truck'){
    const progress=taskProgress(t),remainingKm=Math.max(0,t.dist*(1-progress));
@@ -1305,19 +1304,12 @@ function drawFallback(){
     +`<text x="${boxX+12}" y="${boxY+63}" font-size="14.4" fill="#dcefff">距终点 ${remainingKm.toFixed(1)} km · 预计 ${eta} 分</text>`
     +`<text x="${boxX+12}" y="${boxY+84}" font-size="14.4" fill="#9edbff">当前车速 ${unitTelemetrySpeed(t,i)} km/h</text>`;
   }else if(t.mode==='uav'&&!(t.preposition&&t.status==='hold')){
-   const boxX=p.x>430?p.x-330:p.x+8,boxY=t.preposition&&t.prepositionIndex%2===1?Math.min(648,p.y+14):Math.max(4,p.y-98),state=t.status==='hold'?'转运点待命':t.preposition?'空机前置飞行':'载货投送中';
+   const boxX=p.x>430?p.x-330:p.x+8,boxY=t.vehicleNo===2?Math.min(648,p.y+14):t.vehicleNo===3?Math.min(648,p.y+112):Math.max(4,p.y-98),state=t.status==='hold'?'转运点待命':t.preposition?'空机前置飞行':t.returning?'空载返航中':'载货投送中';
    h+=`<rect x="${boxX}" y="${boxY}" width="320" height="92" rx="8" fill="#081d34f5" stroke="#50dcebb8"/>`
-    +`<text x="${boxX+12}" y="${boxY+21}" font-size="14.4" fill="#dcefff">无人机型号 DJI FlyCart 100</text>`
+    +`<text x="${boxX+12}" y="${boxY+21}" font-size="14.4" fill="#dcefff">无人机型号 FlyCart 200</text>`
     +`<text x="${boxX+12}" y="${boxY+42}" font-size="14.4" fill="#9edbff">无人机编号 ${uavCallsign(t,i)}</text>`
     +`<text x="${boxX+12}" y="${boxY+63}" font-size="14.4" fill="#dcefff">飞行状态 ${state}</text>`
     +`<text x="${boxX+12}" y="${boxY+84}" font-size="14.4" fill="#9edbff">当前飞行速度 ${unitTelemetrySpeed(t,i)} km/h</text>`;
-  }else if(t.mode==='team'){
-   const group=Number(t.vehicleNo)||i+1,slot=(group-1)%4,boxW=236,boxH=34,preferredLeft=slot===1||slot===3,
-    left=preferredLeft?p.x>boxW+12:p.x>760-boxW-12,below=slot>=2,boxX=left?p.x-boxW-12:p.x+12,
-    boxY=Math.max(4,Math.min(702,p.y-boxH/2+(below?24:-24))),edgeX=left?boxX+boxW:boxX;
-   h+='<line x1="'+p.x+'" y1="'+p.y+'" x2="'+edgeX+'" y2="'+(boxY+boxH/2)+'" stroke="#eebd72" stroke-width="1.5" opacity=".9"/>'
-    +'<rect x="'+boxX+'" y="'+boxY+'" width="'+boxW+'" height="'+boxH+'" rx="7" fill="#251c29f5" stroke="#eebd72" stroke-width="1.5"/>'
-    +'<text x="'+(boxX+10)+'" y="'+(boxY+22)+'" font-size="14.4" font-weight="700" fill="#ffe2b0">'+rescueTeamName(t)+'</text>';
   }});
    if(FB.focusId){const p=ALL[FB.focusId],village=S.started&&FB.focusId===INCIDENT.epic;
     h+=`<circle cx="${p.x}" cy="${p.y}" r="${village?8:16}" fill="none" stroke="#ff855a" stroke-width="${village?1:2}"><animate attributeName="r" values="${village?'6;18;6':'12;38;12'}" dur="1.7s" repeatCount="indefinite"/></circle>`;
@@ -1382,14 +1374,14 @@ function havKm(a,b){
  const x=Math.sin(dla/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dlo/2)**2;
  return R*2*Math.asin(Math.sqrt(x));
 }
-SPD.truck=0.7;SPD.uav=1.3; /* km/min：山区公路约42km/h，物流无人机约78km/h */
+SPD.truck=0.7;SPD.uav=2.6; /* km/min：山区公路约42km/h，末端无人机按提速后的156km/h演示 */
 /* 运输画面中车辆与无人机统一播放倍率；每段车辆/无人机移动约用5秒展示，路线ETA仍按原始运力参数计算。 */
-const TASK_PLAYBACK_RATE=Object.freeze({truck:1,uav:1,team:2});
+const TASK_PLAYBACK_RATE=Object.freeze({truck:1,uav:1});
 const TASK_TRANSPORT_SECONDS=5,TASK_SIM_UNITS_PER_SECOND=1.25;
-const UAV_PREPOSITION_SPEED_FACTOR=2;
+const UAV_PREPOSITION_SPEED_FACTOR=2,UAV_DELIVERY_SPEED_FACTOR=2;
 function taskPlaybackRate(task){return TASK_PLAYBACK_RATE[task?.mode]||1;}
 function taskTransportPlaybackSpan(task){
- return TASK_TRANSPORT_SECONDS*TASK_SIM_UNITS_PER_SECOND*simulationSpeed()*taskPlaybackRate(task)/(task?.preposition?UAV_PREPOSITION_SPEED_FACTOR:1);
+ return TASK_TRANSPORT_SECONDS*TASK_SIM_UNITS_PER_SECOND*simulationSpeed()*taskPlaybackRate(task)/(task?.preposition?UAV_PREPOSITION_SPEED_FACTOR:task?.mode==='uav'?UAV_DELIVERY_SPEED_FACTOR:1);
 }
 function taskPlaybackSpan(task){
  if(task?.mode==='truck'||task?.mode==='uav'){
@@ -1402,15 +1394,9 @@ function uavCallsign(task,index){
  const ordinal=Number(task?.vehicleNo)||S.tasks.slice(0,index+1).filter(t=>t.mode==='uav').length||index+1;
  return'SC_MY_QS_A003_'+String(ordinal).padStart(2,'0');
 }
-function rescueTeamName(task){
- const tasks=S.tasks.filter(t=>t.mode==='team'),group=Number(task?.vehicleNo)||tasks.indexOf(task)+1;
- const names=['一','二','三','四','五','六','七','八','九','十'];
- const ordinal=names[group-1]||String(group);
- return'曲山镇沙坝村'+ordinal+'组救援队';
-}
 function unitTelemetrySpeed(task,index){
  if(task.status==='hold')return 0;
- const isUav=task.mode==='uav',base=isUav?18:SPD[task.mode]*60*taskPlaybackRate(task),swing=isUav?1.3:3;
+ const isUav=task.mode==='uav',base=isUav?36:SPD[task.mode]*60*taskPlaybackRate(task),swing=isUav?2.6:3;
  const ordinal=Number(task.vehicleNo)||index+1,phase=ordinal*1.618+(task.preposition?0.83:0);
  const elapsed=Math.max(0,simNow()-Number(task.start||0))*taskPlaybackRate(task);
  const wave=.68*Math.sin(elapsed*.62+phase)+.32*Math.sin(elapsed*1.17+phase*1.73);
@@ -1831,7 +1817,7 @@ const STEP_DEFS=[
   null, /* 原道路事故复算节点已并入路线分析，仅保留索引兼容。 */
    null, /* 运力协调已并入路线确认，不再单独停留。 */
   {active:['TR'],free:['WH'],busy:[['TR','协同运输中']],
-   logs:[['down','物流运输配送系统','协同运输任务启动：车辆、无人机与救援队按已确认方案出发']],
+   logs:[['down','物流运输配送系统','协同运输任务启动：车辆将物资运至安全转运点，三架无人机按计划往返投送']],
     speak:null},
  {active:['TR'],free:['WH'],
   logs:[['back','物流运输配送系统','首批物资送达，<b>签收确认</b>']],
@@ -2128,7 +2114,7 @@ const SCENES={
   want:'视频或图片（塌方/断桥）',media:[]},
  command:{tag:'上级政府',title:'应急指挥中心',desc:'辖区能力不足时上报上级，由指挥中心统一分析、跨区域调拨。',sceneKey:'应急指挥中心/大屏',
   want:'图片 1-2 张',media:[]},
- dispatch:{tag:'空地协同',title:'无人机与救援人员接驳',desc:'车辆抵达安全转运点后，无人机优先投送轻型急需物资，救援人员沿安全通道转运其余物资。',sceneKey:'无人机/救援人员/货运车辆',
+ dispatch:{tag:'无人机接驳',title:'三架无人机往返投送',desc:'车辆抵达安全转运点后，由三架无人机轮流装载，往返投送全部已匹配物资。',sceneKey:'无人机/货运车辆',
   want:'视频为主（无人机/车辆投送动态），可加图片',media:[]},
  distribution:{tag:'到达分发',title:'末端配送与物资发放',desc:'物资运抵网点后，在安置点、发放点分发到受灾群众。',sceneKey:'物资发放/末端配送',
   want:'视频或图片（物资发放动态）',media:[]}
@@ -2300,13 +2286,14 @@ function drawCtl(){
  if(showTaskSection){
  h+='<div class="task-section"><div class="sec-t" style="margin-top:13px">智能调度任务</div><div class="task-list" id="dispatchTaskList">';
  if(!S.tasks.length)h+='<div style="color:var(--dim);font-size:10px">协同任务生成中</div>';
- S.tasks.forEach((t,i)=>{const cl={wait:'wait',run:'run',hold:'run',done:'done'}[t.status],
+  S.tasks.forEach((t,i)=>{const cl={wait:'wait',run:'run',hold:'run',done:'done'}[t.status],
   tx=t.preposition?{wait:'待起飞',run:'空机前置中',hold:'转运点待命',done:'已转入载货投送'}[t.status]:
+   t.returning?{wait:'待返航',run:'空载返航中',done:'已返回转运点'}[t.status]:
    t.status==='done'?(t.confirmed?(t.finalDelivery?'已签收':'中转已确认'):'已送达'):{wait:'待出发',run:'投送中'}[t.status],
   from=shortName(ALL[t.depot].name),to=t.preposition?shortName(ALL[t.target].name):townName(t.target),
-  modeLabel=t.preposition?'无人机空机前置':({truck:'公路车辆',uav:'无人机',team:'救援人员接驳'}[t.mode]||t.mode),
-  routeMeta=t.preposition?`${t.carrier||'前置无人机分队'} · 空机航线 ${t.dist.toFixed(1)}km`:`${modeLabel} · ${t.carrier||'应急运力'} · ${t.dist.toFixed(1)}km · ${Math.ceil(t.dur)}分`,
-  manifestLabel=t.preposition?'空机飞往转运点，等待车辆物资到达。':t.manifest?t.manifest.map(m=>MAT_NAME[m.mat]+m.qty+m.unit).join('、'):MAT_NAME[t.mat]+t.qty+'份';
+  modeLabel=t.preposition?'无人机空机前置':'无人机',
+  routeMeta=t.preposition?`${t.carrier||'前置无人机分队'} · 空机航线 ${t.dist.toFixed(1)}km`:t.returning?`${uavCallsign(t,i)} · 空载返航 · ${t.dist.toFixed(1)}km · ${Math.ceil(t.dur)}分`:`${modeLabel} ${uavCallsign(t,i)} · ${t.carrier||'三机往返分队'} · ${t.dist.toFixed(1)}km · ${Math.ceil(t.dur)}分`,
+  manifestLabel=t.preposition?'空机飞往转运点，等待车辆物资到达。':t.returning?'空载返航至安全转运点，为下一趟往返投送复位。':t.manifest?t.manifest.map(m=>MAT_NAME[m.mat]+m.qty+m.unit).join('、'):MAT_NAME[t.mat]+t.qty+'份';
   h+=`<div class="task"><div class="no">${i+1}</div><div style="min-width:0">
     <div class="t1">${from} → ${to}</div>
     <div class="t2 route-meta">${routeMeta}</div>
@@ -2365,7 +2352,7 @@ function drawKpis(){
  const sat=totalD?Math.round(met/totalD*100):0;
   const dn=completedTargets().size;
  const arr=S.affected.length?Math.round(dn/S.affected.length*100):0;
- const durs=S.step>=6?S.tasks.filter(t=>t.status==='done'&&!t.preposition).map(t=>t.dur):[];
+ const durs=S.step>=6?S.tasks.filter(t=>t.status==='done'&&!t.preposition&&!t.returning).map(t=>t.dur):[];
  const avg=durs.length?Math.round(durs.reduce((a,b)=>a+b,0)/durs.length):0;
  const showEnd=S.step>=9;
  document.getElementById('kpis').innerHTML=
