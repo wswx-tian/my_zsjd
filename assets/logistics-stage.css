@@ -1,6 +1,6 @@
 /* 物资调度与配送场景；沿用地图大屏与左右浮层。 */
 .logistics-heading,.supply-panel{display:none}
-.logistics-scene .logistics-heading{display:block;position:fixed;z-index:1060;top:82px;left:50%;transform:translateX(-50%);width:min(880px,calc(100vw - 840px));padding:13px 18px;border:1px solid #3a8da8;border-top:3px solid #48d6d2;border-radius:12px;background:linear-gradient(110deg,rgba(8,38,53,.97),rgba(6,23,42,.96));box-shadow:0 12px 40px #0005;backdrop-filter:blur(14px)}
+.logistics-scene .logistics-heading{display:block;position:fixed;z-index:1060;top:calc(var(--topbar-height) + 22px);left:50%;transform:translateX(-50%);width:min(880px,calc(100vw - 840px));padding:13px 18px;border:1px solid #3a8da8;border-top:3px solid #48d6d2;border-radius:12px;background:linear-gradient(110deg,rgba(8,38,53,.97),rgba(6,23,42,.96));box-shadow:0 12px 40px #0005;backdrop-filter:blur(14px)}
 .logistics-heading .act{font-size:10px;letter-spacing:1.3px;color:#8cdee5}
 .logistics-heading h2{font-size:22px;line-height:1.6;color:#effcff;margin:3px 0;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:8px;row-gap:0}
 .logistics-stage-name{white-space:nowrap}
@@ -70,12 +70,6 @@ body.logistics-scene.logistics-delivery .supply-panel,body.logistics-scene.logis
 .road-closure-alert-flash{box-sizing:border-box;width:30px;height:30px;border:3px solid #ff4b4b;border-radius:50%;background:#ff343422;box-shadow:0 0 14px #ff3636b8;animation:roadClosureMarkerFlash .9s steps(1,end) forwards}
 @keyframes roadClosureMarkerFlash{0%,25%,50%,75%,100%{opacity:.16;transform:scale(.78)}12%,37%,62%,87%{opacity:1;transform:scale(1.12)}}
 @media(prefers-reduced-motion:reduce){.leaflet-overlay-pane .road-closure-flash-line,.road-closure-alert-flash{animation:none;opacity:.78}}
-.logistics-landslide-pin{position:absolute;left:0;top:0;width:0;height:0;z-index:8}
-.logistics-landslide-number{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;width:40px;height:40px;box-sizing:border-box;border:3px solid var(--hazard-color,#f27eaf);border-radius:50%;background:#061421;color:#fff;font-size:22px;font-weight:900;box-shadow:0 0 0 4px #ffffff1a,0 3px 12px #0009;transform:translate(-50%,-50%)}
-.logistics-landslide-copy{position:absolute;left:25px;top:0;min-width:150px;padding:10px 14px;border:1px solid var(--hazard-color,#f27eaf);border-radius:7px;background:#07182bf5;box-shadow:0 4px 14px #0008;color:#f0f8ff;line-height:1.35;white-space:nowrap;transform:translateY(-50%)}
-.logistics-landslide-copy b{display:block;color:#f0f8ff;font-size:20px;font-weight:750}
-.logistics-landslide-copy small{display:block;margin-top:3px;color:#ffbf9e;font-size:18px;font-weight:650}
-.logistics-landslide-pin.left .logistics-landslide-copy{left:auto;right:25px;text-align:right}
 .transfer-label{display:block;box-sizing:border-box;width:max-content;min-width:225px;max-width:255px;padding:8px 10px;border:1px solid #eebd72;border-radius:6px;background:#251c29f5;color:#ffe2b0;white-space:normal;text-align:center;font-size:15px;line-height:1.5;box-shadow:0 3px 10px #0005;transform:translate(-50%,-50%)}
 .mk.team .mk-ic{background:#8b6330;border-color:#ffe2b0;box-shadow:0 0 0 3px #eebd724d}
 .task .t2.manifest{white-space:normal;line-height:1.6;font-size:9px}.task .t2.route-meta{color:#80c7d0}
@@ -96,13 +90,6 @@ body.logistics-scene.logistics-delivery .supply-panel,body.logistics-scene.logis
 .road-incident-video-foot{height:27px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 9px;background:#09192a;color:#dce9f4;font-size:9px}
 .road-incident-video-foot b{color:#ffaaa7;font-weight:700}
 .road-incident-video-foot span{color:#a9bdcf;white-space:nowrap}
-.logistics-lastmile-camera-layer{display:none;position:fixed;inset:0;z-index:1060;pointer-events:none}
-.logistics-lastmile-camera-layer.show{display:block}
-.logistics-lastmile-camera-layer .incident-monitor-float{display:none;box-sizing:border-box;width:min(360px,calc(100vw - 24px));border-color:var(--camera-color,#45d6eb);box-shadow:0 9px 28px #0009,0 0 14px var(--camera-color,#45d6eb);pointer-events:auto}
-.logistics-lastmile-camera-layer .incident-monitor-float.show{display:block;animation:cameraAppear .42s ease-out both}
-.lastmile-camera-link{position:absolute;inset:0;width:100vw;height:100vh;overflow:visible;pointer-events:none}
-.lastmile-camera-line{stroke:#61d8ed;stroke-width:2.5;stroke-dasharray:7 6;stroke-linecap:round;filter:drop-shadow(0 1px 3px #000);opacity:.88}
-.logistics-lastmile-camera-layer .incident-camera-link-button{pointer-events:auto}
 .confirm-route-list{margin-bottom:12px}
 .confirm-collaboration-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
 .confirm-collaboration{min-width:0;padding:10px 12px;border:1px solid #68b8c83d;border-radius:9px;background:#081c30a8}
@@ -151,10 +138,10 @@ body.logistics-scene.logistics-delivery .supply-panel,body.logistics-scene.logis
 @media(max-width:760px){.confirm-estimate-head,.confirm-estimate-row{grid-template-columns:minmax(98px,1fr) minmax(0,2.5fr) minmax(74px,auto);gap:8px}.confirm-estimate-rule{font-size:11px}}
 @media(max-width:1500px) and (min-width:1101px){.logistics-heading h2{font-size:20px}}
 @media(max-width:1500px) and (min-width:1101px){.logistics-scene .supply-panel{right:10px;width:min(410px,calc(100vw - 20px));bottom:168px;max-height:min(520px,calc(100vh - 210px))}}
-@media(max-width:1100px){.logistics-scene .logistics-heading{width:calc(100vw - 36px);top:80px}.logistics-heading h2{font-size:19px}.logistics-scene .center-zone{min-height:650px}.logistics-scene .supply-panel{left:auto;right:12px;top:auto;bottom:120px;transform:none;width:min(410px,calc(100vw - 24px));max-height:min(500px,calc(100vh - 240px))}.logistics-scene .scenario-lock{display:block}.logistics-scene .assessment-card{width:min(344px,44vw)}}
+@media(max-width:1100px){.logistics-scene .logistics-heading{width:calc(100vw - 36px);top:calc(var(--topbar-height) + 22px)}.logistics-heading h2{font-size:19px}.logistics-scene .center-zone{min-height:650px}.logistics-scene .supply-panel{left:auto;right:12px;top:auto;bottom:120px;transform:none;width:min(410px,calc(100vw - 24px));max-height:min(500px,calc(100vh - 240px))}.logistics-scene .scenario-lock{display:block}.logistics-scene .assessment-card{width:min(344px,44vw)}}
 @media(max-width:760px){.logistics-scene .supply-panel{left:auto;right:10px;top:auto;bottom:12px;transform:none;width:min(410px,calc(100vw - 20px));max-height:min(520px,calc(100vh - 220px))}}
-@media(max-width:600px){.logistics-scene .logistics-heading{top:78px;padding:10px 13px}.logistics-heading h2{font-size:17px}.supply-head{padding:9px 11px}.supply-head h3{font-size:12px}.supply-panel td{padding:6px;font-size:9px}.supply-panel th{padding:6px}.supply-foot{padding:5px 10px;font-size:8px}.logistics-scene .assessment-card{width:calc(100vw - 20px);max-height:calc(100vh - 455px);bottom:10px}.calc-step{padding:7px 0}.calc-summary{padding:7px 9px}.stage-confirm-dialog{padding:20px 17px}.stage-confirm-dialog h2{font-size:22px}.stage-confirm-details{font-size:13px}.stage-confirm-details ul{grid-template-columns:1fr}.confirm-estimate-summary{display:block;margin-bottom:8px}.confirm-estimate-summary b{font-size:13px}.confirm-estimate-summary small{display:block;margin-top:3px}.confirm-estimate-head,.confirm-estimate-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px}.confirm-estimate-head span:nth-child(2){display:none}.confirm-estimate-row{padding:8px 0}.confirm-estimate-item{font-size:12px}.confirm-estimate-rule{grid-column:1/-1;grid-row:2;font-size:11px}.confirm-estimate-qty{grid-column:2;grid-row:1}.confirm-estimate-foot{font-size:10px}}
-@media(max-width:700px){.confirm-collaboration-grid{grid-template-columns:1fr}.logistics-lastmile-camera-layer .incident-monitor-float{width:min(300px,calc(100vw - 24px))}}
+@media(max-width:600px){.logistics-scene .logistics-heading{top:calc(var(--topbar-height) + 22px);padding:10px 13px}.logistics-heading h2{font-size:17px}.supply-head{padding:9px 11px}.supply-head h3{font-size:12px}.supply-panel td{padding:6px;font-size:9px}.supply-panel th{padding:6px}.supply-foot{padding:5px 10px;font-size:8px}.logistics-scene .assessment-card{width:calc(100vw - 20px);max-height:calc(100vh - 455px);bottom:10px}.calc-step{padding:7px 0}.calc-summary{padding:7px 9px}.stage-confirm-dialog{padding:20px 17px}.stage-confirm-dialog h2{font-size:22px}.stage-confirm-details{font-size:13px}.stage-confirm-details ul{grid-template-columns:1fr}.confirm-estimate-summary{display:block;margin-bottom:8px}.confirm-estimate-summary b{font-size:13px}.confirm-estimate-summary small{display:block;margin-top:3px}.confirm-estimate-head,.confirm-estimate-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px}.confirm-estimate-head span:nth-child(2){display:none}.confirm-estimate-row{padding:8px 0}.confirm-estimate-item{font-size:12px}.confirm-estimate-rule{grid-column:1/-1;grid-row:2;font-size:11px}.confirm-estimate-qty{grid-column:2;grid-row:1}.confirm-estimate-foot{font-size:10px}}
+@media(max-width:700px){.confirm-collaboration-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.warehouse-halo,.calc-step.active h4 i,.supply-calculating i,.road-incident-video-layer.show .road-incident-video-card,.road-incident-live i{animation:none}}
 @media(max-width:600px){
  .stage-confirm-backdrop{padding:10px}
@@ -204,6 +191,13 @@ body.logistics-scene.logistics-delivery .supply-panel,body.logistics-scene.logis
 .route-confirm-dialog .confirm-route-list li p{margin:5px 0 0;color:#d4e6f0;font-size:14px;font-weight:650;font-variant-numeric:tabular-nums}
 .route-confirm-dialog .confirm-route-list li p i{padding:0 4px;color:#5edacf;font-style:normal}
 .route-confirm-dialog .confirm-collaboration-grid{gap:12px;margin-top:0}
+.route-confirm-dialog .confirm-collaboration-left{display:grid;align-content:start;gap:8px;min-width:0}
+.route-confirm-dialog .confirm-collaboration-drone{height:100%;box-sizing:border-box}
+.route-confirm-dialog .confirm-road-changes ul{margin-top:5px}
+.route-confirm-dialog .confirm-road-changes li{align-items:center}
+.route-confirm-dialog .confirm-road-changes li span{font-size:12px}
+.route-confirm-dialog .confirm-road-changes li span.detoured{color:#ff9c91}
+.route-confirm-dialog .confirm-road-changes li span.clear{color:#91f0d4}
 .route-confirm-dialog .confirm-collaboration{padding:12px 14px;border-color:#67c0d050;border-radius:11px;background:linear-gradient(145deg,#0a2136dd,#0a1b2ddd)}
 .route-confirm-dialog .confirm-collaboration h3{margin-bottom:7px;font-size:16px;line-height:1.4}
 .route-confirm-dialog .confirm-collaboration p{margin:5px 0;font-size:13px;line-height:1.55}

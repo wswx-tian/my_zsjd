@@ -19,7 +19,7 @@ async function setup({people=96,speed=2,configure=''}={}){
  });
  run(context,inline[0][2]);run(context,logistics);
  await run(context,`(async()=>{
-  VIEW.draw=()=>{};drawLogisticsCalculation=()=>{};drawLogisticsPanels=()=>{};applyNodeStates=()=>{};syncLastMileCamera=()=>{};
+   VIEW.draw=()=>{};drawLogisticsCalculation=()=>{};drawLogisticsPanels=()=>{};applyNodeStates=()=>{};
   drawCtl=()=>{};drawFloat=()=>{};drawKpis=()=>{};updateClock=()=>{};enterStep=i=>{S.step=i;};
   INCIDENT.villageReport.shelteredPeople=${people};S.cfg.speed=${speed};${configure}
   S.incident.result=incidentResult();S.logistics=logisticsState();S.started=true;S.step=3;S.muted=true;

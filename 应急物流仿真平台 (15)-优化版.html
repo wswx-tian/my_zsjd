@@ -25,7 +25,7 @@ body{
   color:var(--txt);background:linear-gradient(160deg,#0a1526,#060d1c 55%,#081120);
   min-height:100vh;overflow:hidden;
 }
-.app{position:relative;z-index:1;height:100vh;min-height:660px;display:grid;grid-template-rows:56px minmax(0,1fr);gap:10px;padding:10px}
+.app{--topbar-height:79px;position:relative;z-index:1;height:100vh;min-height:660px;display:grid;grid-template-rows:var(--topbar-height) minmax(0,1fr);gap:10px;padding:10px}
 .topbar{display:flex;align-items:center;gap:14px;padding:0 18px;position:relative;z-index:2;
   background:linear-gradient(180deg,rgba(9,22,45,.62),rgba(7,17,34,.46));backdrop-filter:blur(12px);
   border:1px solid rgba(120,180,255,.16);border-radius:14px;flex:none;box-shadow:none}
@@ -34,6 +34,12 @@ body{
 .logo div{font-size:17px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
 .logo small{display:block;font-size:9px;font-weight:400;color:var(--dim);letter-spacing:2px}
 .top-tags{display:flex;gap:8px;margin-left:6px}
+.topbar-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;max-width:calc(100% - 360px);white-space:nowrap;z-index:2}
+.topbar-center .logo{gap:17px}
+.topbar-center .logo img{width:48px;height:48px}
+.topbar-center .logo div{font-size:25.5px;letter-spacing:.4px}
+.top-right{flex:none;position:relative;z-index:3}
+
 .ttag{font-size:11px;color:#b9c9e6;padding:4px 11px;border:1px solid rgba(116,166,255,.22);border-radius:20px;background:rgba(116,166,255,.08)}
 .top-right{margin-left:auto;display:flex;align-items:center;gap:13px}
 .alert-badge{display:flex;align-items:center;gap:7px;font-size:12px;padding:5px 12px;border-radius:20px;
@@ -41,7 +47,7 @@ body{
 .alert-badge.warn{background:rgba(255,165,82,.1);border-color:rgba(255,165,82,.32);color:#ffa552}
 .alert-badge.danger{background:rgba(255,107,111,.12);border-color:rgba(255,107,111,.35);color:#ff6b6f}
 .alert-badge .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
-.clock{font-size:15px;font-weight:700;letter-spacing:1px;color:#9fdcff;font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(0,190,255,.4)}
+.clock{display:none!important}
 .icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid rgba(120,180,255,.2);background:rgba(7,17,34,.45);
   color:var(--txt);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
 .icon-btn svg{width:16px;height:16px}
@@ -340,7 +346,7 @@ footer.foot-zone{grid-area:2/2/3/3;position:relative;z-index:1;pointer-events:au
 
 @media(max-width:1100px){
   body{overflow-y:auto}
-  .app{height:auto;min-height:100vh;grid-template-rows:56px auto}
+ .app{--topbar-height:67px;height:auto;min-height:100vh;grid-template-rows:var(--topbar-height) auto}
   .main{display:flex;flex-direction:column}
   .panel{flex:none;max-height:44vh}
   #ctlBody{overflow-y:auto}
@@ -363,8 +369,8 @@ footer.foot-zone{grid-area:2/2/3/3;position:relative;z-index:1;pointer-events:au
   .center-zone{height:38vh}
   .scene-card{width:260px}
 }
-/* 场景一：暴雨泥石流监测警报与 AI 辅助研判 */
-.incident-banner{position:fixed;z-index:1100;top:82px;left:50%;transform:translateX(-50%) translateY(-16px);
+/* 场景一：山体滑坡、内涝监测警报与智能辅助分析 */
+.incident-banner{position:fixed;z-index:1100;top:calc(var(--topbar-height) + 22px);left:50%;transform:translateX(-50%) translateY(-16px);
  width:min(880px,calc(100vw - 840px));min-width:360px;padding:17px 22px 15px;border-radius:12px;
  border:1px solid rgba(255,111,99,.8);border-top:3px solid #ff6e61;background:linear-gradient(110deg,rgba(67,16,26,.97),rgba(27,17,34,.96));
  box-shadow:0 12px 54px rgba(0,0,0,.5),0 0 32px rgba(255,66,64,.15);opacity:0;visibility:hidden;pointer-events:none;
@@ -463,7 +469,7 @@ footer.foot-zone{grid-area:2/2/3/3;position:relative;z-index:1;pointer-events:au
  .assessment-card{width:330px;left:22px;padding:14px 16px}
 }
 @media(max-width:1100px){
- .incident-banner{position:fixed;top:80px;width:calc(100vw - 36px);min-width:0;padding:12px 16px}
+ .incident-banner{position:fixed;top:calc(var(--topbar-height) + 22px);width:calc(100vw - 36px);min-width:0;padding:12px 16px}
  .incident-banner h1{font-size:19px}.incident-banner p{font-size:10px}
  .incident-scene .center-zone{height:72vh;min-height:540px}
  .incident-scene .scene-card{position:absolute;top:175px;right:12px;width:min(320px,42vw)}
@@ -472,7 +478,7 @@ footer.foot-zone{grid-area:2/2/3/3;position:relative;z-index:1;pointer-events:au
  .assessment-result strong{font-size:23px}
 }
 @media(max-width:600px){
- .incident-banner{top:78px}.incident-banner h1{font-size:17px}.incident-eyebrow{font-size:9px}
+ .incident-banner{top:calc(var(--topbar-height) + 22px)}.incident-banner h1{font-size:17px}.incident-eyebrow{font-size:9px}
  .incident-scene .scene-card{position:fixed;top:210px;right:10px;width:calc(100vw - 20px)}
  .incident-monitor-float{width:min(300px,calc(100vw - 24px))}
  .incident-monitor-label{font-size:9px;min-height:28px;padding:4px 5px}
@@ -516,6 +522,49 @@ footer.foot-zone{grid-area:2/2/3/3;position:relative;z-index:1;pointer-events:au
  .assessment-card{max-height:calc(100vh - 390px)}
 }
 @media(prefers-reduced-motion:reduce){.incident-banner.show,.focus-ring.incident-ring,.incident-dot,.assessment-row.pending .assessment-row-state::after{animation:none}}
+
+@media(max-width:1600px){
+  .app{--topbar-height:65px;grid-template-rows:var(--topbar-height) minmax(0,1fr)}
+  .topbar-center{gap:10px;max-width:calc(100% - 320px)}
+  .topbar-center .logo{gap:10.5px}
+  .topbar-center .logo img{width:36px;height:36px}
+  .topbar-center .logo div{font-size:19.5px;letter-spacing:0}
+}
+@media(max-width:1200px){
+  .app{--topbar-height:60px;grid-template-rows:var(--topbar-height) minmax(0,1fr)}
+  .topbar-center{gap:8px;max-width:calc(100% - 300px)}
+  .topbar-center .logo{gap:7.5px}
+  .topbar-center .logo img{width:28.5px;height:28.5px}
+  .topbar-center .logo div{font-size:15px}
+  .top-right{gap:8px}
+  .alert-badge{font-size:10px;padding:4px 8px}
+  .clock{font-size:13px}
+}
+@media(max-width:1000px){
+  .app{--topbar-height:54px;grid-template-rows:var(--topbar-height) minmax(0,1fr)}
+  .topbar-center{max-width:calc(100% - 250px)}
+    .topbar-center .logo{gap:6px}
+  .topbar-center .logo img{width:25.5px;height:25.5px}
+  .topbar-center .logo div{font-size:13.5px}
+}
+@media(max-width:820px){
+  .app{--topbar-height:50px;grid-template-rows:var(--topbar-height) minmax(0,1fr)}
+  .topbar-center{max-width:calc(100% - 230px)}
+  .topbar-center .logo img{width:22.5px;height:22.5px}
+  .topbar-center .logo div{font-size:12px}
+  .alert-badge{display:none}
+}
+@media(max-width:600px){
+  .topbar-center{left:calc((100% - 150px)/2)}
+  .topbar-center .logo img{width:19.5px;height:19.5px}
+  .topbar-center .logo div{font-size:10.5px}
+}
+@media(max-width:400px){
+  .clock{display:none}
+  .topbar-center{left:calc((100% - 72px)/2)}
+  .topbar-center .logo img{width:18px;height:18px}
+  .topbar-center .logo div{font-size:9px}
+}
 </style>
 </head>
 <body>
@@ -525,15 +574,15 @@ footer.foot-zone{grid-area:2/2/3/3;position:relative;z-index:1;pointer-events:au
     <svg id="mapFallback" viewBox="0 0 760 740" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
   <header class="topbar">
-    <div class="logo">
-      <img src="assets/brand-logo.png" alt="应急物流系统徽标">
-      <div>应急物流快速响应自主调度系统</div>
+    <div class="topbar-center">
+      <div class="logo">
+        <img src="assets/brand-logo.png" alt="应急物流系统徽标">
+        <div>应急物流快速响应自主调度仿真系统</div>
+      </div>
     </div>
-    <div class="top-tags"><span class="ttag">市应急管理局</span><span class="ttag">国家人工智能应用中试基地</span></div>
     <div class="top-right">
       <span class="alert-badge" id="alertBadge"><i class="dot"></i><span id="alertTxt">常态监测</span></span>
-      <span class="clock" id="clock">T+00:00</span>
-      <button class="icon-btn muted" id="btnMute" title="开启声音" aria-label="开启声音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
+      <button class="icon-btn" id="btnMute" title="关闭声音" aria-label="关闭声音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
     </div>
   </header>
 
@@ -547,7 +596,7 @@ footer.foot-zone{grid-area:2/2/3/3;position:relative;z-index:1;pointer-events:au
     <div class="center-zone">
         <div class="incident-banner" id="incidentBanner" role="alert" aria-live="assertive">
           <div class="incident-eyebrow"><i class="incident-dot"></i><span id="incidentEyebrow">突发灾情警报 · 实时监测触发</span></div>
-          <h1 id="incidentTitle">北川曲山镇沙坝村因持续暴雨发生泥石流灾害</h1>
+          <h1 id="incidentTitle">北川曲山镇沙坝村因强降雨发生山体滑坡、内涝灾害</h1>
           <p id="incidentDescription">收到报警，开始灾情辅助分析</p>
         </div>
         <aside class="assessment-card" id="assessmentCard" aria-label="收到报警，开始灾情辅助分析" aria-live="polite"></aside>
@@ -656,10 +705,10 @@ const LOG_SYS={
 const SPD={truck:9,uav:20}, CAP={truck:60,uav:18};
 /* ===== 全局状态 ===== */
 const S={phase:0,step:0,sim:0,simRender:0,stepTimer:null,transportTimer:null,introTimer:null,paused:false,timelineReview:false,
-  cfg:{type:'暴雨泥石流',epic:'T1',speed:2},
+  cfg:{type:'山体滑坡、内涝',epic:'T1',speed:2},
  autoConfirm:false,reviewTransportSim:null,
  affected:[],blocked:new Set(),demands:{},tasks:[],logs:[],
- radius:0,targetR:0,seed:1,stock:{},usedT:{},usedU:{},busy:{},curCmd:{},muted:true,layer:'sat',
+ radius:0,targetR:0,seed:1,stock:{},usedT:{},usedU:{},busy:{},curCmd:{},muted:false,layer:'sat',
   activeNow:[],engaged:{},routesDirty:true,flew:false,
    incident:{timer:null,elapsed:0,lastTick:0,videoShown:false,shown:false,complete:false,result:null,cameraSeen:[],
     focusRequested:false,mapFocusReady:false},logistics:null};
@@ -740,7 +789,13 @@ function scheduleMapLabelLayout(){
   const root=document.getElementById('mapLeaflet');if(!root)return;
   const labels=[...root.querySelectorAll(MAP_LABEL_SELECTOR)];
   const candidates=labels.map(element=>({element,priority:mapLabelPriority(element)})).sort((a,b)=>b.priority-a.priority);
-  const placed=[],pending=[];
+  // 县级地名等标签避让地图点位图标，避免遮住仓库、转运点和事件标记。
+  const placed=[...root.querySelectorAll('.leaflet-marker-icon .mk-ic')].flatMap(icon=>{
+   const marker=icon.closest('.leaflet-marker-icon'),style=marker&&getComputedStyle(marker);
+   if(!marker||style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)return[];
+   const rect=icon.getBoundingClientRect();if(rect.width<4||rect.height<4)return[];
+   return[{left:rect.left-7,right:rect.right+7,top:rect.top-7,bottom:rect.bottom+7}];
+  }),pending=[];
   const rootRect=root.getBoundingClientRect(),padding=4,offsets=[[0,0]];
   for(let radius=24;radius<=72;radius+=24){
    for(let i=0;i<16;i++){const angle=(Math.PI*2*i)/16;offsets.push([Math.round(Math.cos(angle)*radius),Math.round(Math.sin(angle)*radius)]);}
@@ -837,7 +892,7 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
   const el=document.getElementById('mapLeaflet');
   if(M.map||el._leaflet_id)return;
   const map=L.map(el,{zoomControl:false,attributionControl:false,doubleClickZoom:false,
-   boxZoom:false,keyboard:false,zoomAnimation:false,fadeAnimation:false}).setView([31.55,104.82],8);
+   boxZoom:false,keyboard:false,zoomAnimation:false,fadeAnimation:false,zoomSnap:.25}).setView([31.87,104.74],8.75);
   M.map=map;
   const updateMapLabelScale=()=>{
    const zoom=map.getZoom(),scale=zoom<=5?0.5:zoom<=6?0.55:zoom<=7?0.67:zoom<=8?0.8:zoom<=9?0.9:1;
@@ -909,7 +964,7 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
   if(S.phase>=1){const c=ll(S.cfg.epic),flood=S.cfg.type==='洪灾';
    L.circle(c,{radius:S.radius*1000,color:flood?'#3b8eed':'#ef4444',weight:2,dashArray:'5 5',
     fillColor:flood?'#3b8eed':'#ef4444',fillOpacity:.12}).addTo(M.routeL);}
-  /* 断路标识仅在路线规划阶段显示，灾情触发/研判阶段只呈现灾情范围。 */
+  /* 断路标识仅在路线规划阶段显示，灾情触发/辅助分析阶段只呈现灾情范围。 */
   if(S.step===5)S.blocked.forEach(k=>{const e=EDGES[k];
    L.polyline([ll(e.a),ll(e.b)],{color:'#ef4444',weight:3,dashArray:'7 6',opacity:.9}).addTo(M.routeL);});
   S.tasks.forEach(t=>{
@@ -1000,7 +1055,7 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
      M.map.flyTo(target,targetZoom,{duration:incident?1.8/INCIDENT_SCENE_RATE:.8});
   if(M.focusM)M.map.removeLayer(M.focusM);
    const html=incident
-     ?'<div class="focus-ring incident-ring"></div><div class="focus-ring incident-ring second"></div><div class="incident-marker-label">沙坝村 · 暴雨泥石流</div>'
+     ?'<div class="focus-ring incident-ring"></div><div class="focus-ring incident-ring second"></div><div class="incident-marker-label">沙坝村 · 山体滑坡、内涝</div>'
     :'<div class="focus-ring"></div>';
    const ic=L.divIcon({className:'mk',html,iconSize:[0,0],iconAnchor:[0,0]});
   M.focusM=L.marker(ll(id),{icon:ic,interactive:false}).addTo(M.map);
@@ -1050,7 +1105,7 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
 const SP={o:null,idx:0,timer:null,popup:null,homeParent:null,homeNextSibling:null};
 function mediaStop(){
  clearTimeout(SP.timer);SP.timer=null;
- document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video,.logistics-lastmile-camera-layer video').forEach(v=>{try{v.pause();v.onended=null;v.onerror=null;}catch(e){}});
+ document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video').forEach(v=>{try{v.pause();v.onended=null;v.onerror=null;}catch(e){}});
 }
 function renderMedia(i){
   mediaStop();
@@ -1163,7 +1218,7 @@ function drawFallback(){
   h+=`<text x="${r.cen[0]}" y="${r.cen[1]}" font-size="22" fill="${TH.label}" text-anchor="middle">${r.name}</text>`;});
  if(S.phase>=1){const c=ALL[S.cfg.epic],flood=S.cfg.type==='洪灾';
   h+=`<circle cx="${c.x}" cy="${c.y}" r="${S.radius*15}" fill="${flood?'rgba(56,150,230,.12)':'rgba(255,90,82,.08)'}" stroke="${flood?'rgba(56,150,230,.5)':'rgba(255,90,82,.5)'}" stroke-dasharray="5 5"/>`;}
- const showBlockedRoads=S.step===5;
+ const showBlockedRoads=S.step===5&&!(S.logistics?.active&&S.logistics.routeRolloverActivated);
  EDGES.forEach((e,k)=>{const a=ALL[e.a],b=ALL[e.b];
   h+=showBlockedRoads&&S.blocked.has(k)
    ?`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#ff5a52" stroke-width="1.8" stroke-dasharray="6 5" opacity=".8"/>`
@@ -1174,7 +1229,7 @@ function drawFallback(){
  h+=`<path d="${dimp}" fill-rule="evenodd" fill="#061521" fill-opacity=".62" stroke="#42dfff" stroke-opacity=".7" stroke-width="1.2"/>`;
   if(S.logistics&&S.logistics.active){
    const c=LOGISTICS_CLOSED_ROAD,d=ALL[LOGISTICS_CFG.detour];
-   if(S.step===5){const road=LOGISTICS_CLOSED_ROAD.fallbackPath.map(p=>p.join(',')).join(' '),a=S.logistics,alertPending=a.roadClosurePromptReady===false,elapsed=alertPending?Math.max(0,performance.now()-a.roadClosureAlertStartedAt):0,
+   if(S.step===5&&!S.logistics.routeRolloverActivated){const road=LOGISTICS_CLOSED_ROAD.fallbackPath.map(p=>p.join(',')).join(' '),a=S.logistics,alertPending=a.roadClosurePromptReady===false,elapsed=alertPending?Math.max(0,performance.now()-a.roadClosureAlertStartedAt):0,
      flash=.2+.8*Math.pow(Math.abs(Math.sin(elapsed/1000*Math.PI*2)),4),lineOpacity=alertPending?flash:1,lineWidth=alertPending?3.5+flash*2.5:5;
     h+='<polyline points="'+road+'" fill="none" stroke="#171018" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>'
      +'<polyline points="'+road+'" fill="none" stroke="#ff3f43" stroke-width="'+lineWidth.toFixed(1)+'" stroke-opacity="'+lineOpacity.toFixed(2)+'" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -1248,22 +1303,9 @@ function drawFallback(){
     +'<rect x="'+boxX+'" y="'+boxY+'" width="'+boxW+'" height="'+boxH+'" rx="7" fill="#251c29f5" stroke="#eebd72" stroke-width="1.5"/>'
     +'<text x="'+(boxX+10)+'" y="'+(boxY+22)+'" font-size="14.4" font-weight="700" fill="#ffe2b0">'+rescueTeamName(t)+'</text>';
   }});
-  if(S.logistics&&S.logistics.active&&S.step>=7&&S.logistics.lastMileZoomReady){
-   const village=ALL[INCIDENT.epic],lat0=INCIDENT.coordinates.lat,lng0=INCIDENT.coordinates.lng,pxPerKm=70;
-   INCIDENT.media.filter(item=>item.targetNumber===1||item.targetNumber===3).forEach(item=>{
-    const color=item.targetNumber===1?'#45d6eb':'#f27eaf',x=village.x+(item.targetLng-lng0)*111.32*Math.cos(lat0*Math.PI/180)*pxPerKm,y=village.y+(lat0-item.targetLat)*111.1*pxPerKm;
-    const left=item.targetNumber===3,boxW=148,boxH=58,boxX=left?x-boxW-22:x+22,boxY=y-boxH/2,edgeX=left?boxX+boxW:boxX;
-    h+='<line x1="'+x+'" y1="'+y+'" x2="'+edgeX+'" y2="'+y+'" stroke="'+color+'" stroke-width="2" opacity=".9"/>'
-     +'<circle cx="'+x+'" cy="'+y+'" r="17" fill="#061421" stroke="'+color+'" stroke-width="3"/>'
-     +'<text x="'+x+'" y="'+(y+6)+'" text-anchor="middle" fill="#fff" font-size="19" font-weight="900">'+item.targetNumber+'</text>'
-     +'<rect x="'+boxX+'" y="'+boxY+'" width="'+boxW+'" height="'+boxH+'" rx="7" fill="#07182bf5" stroke="'+color+'" stroke-width="1.5"/>'
-     +'<text x="'+(boxX+10)+'" y="'+(boxY+23)+'" fill="#f0f8ff" font-size="16" font-weight="700">'+item.targetName+'</text>'
-     +'<text x="'+(boxX+10)+'" y="'+(boxY+45)+'" fill="#ffbf9e" font-size="14" font-weight="650">'+item.targetIssue+'</text>';
-   });
-  }
    if(FB.focusId){const p=ALL[FB.focusId],village=S.started&&FB.focusId===INCIDENT.epic;
     h+=`<circle cx="${p.x}" cy="${p.y}" r="${village?8:16}" fill="none" stroke="#ff855a" stroke-width="${village?1:2}"><animate attributeName="r" values="${village?'6;18;6':'12;38;12'}" dur="1.7s" repeatCount="indefinite"/></circle>`;
-    if(S.started&&S.step===0)h+=`<text x="${p.x}" y="${p.y+24}" font-size="7" fill="#ffb58b" text-anchor="middle">沙坝村 · 暴雨泥石流警示</text>`;}
+    if(S.started&&S.step===0)h+=`<text x="${p.x}" y="${p.y+24}" font-size="7" fill="#ffb58b" text-anchor="middle">沙坝村 · 山体滑坡、内涝警示</text>`;}
  document.getElementById('mapFallback').innerHTML=h;
   if(typeof syncRoadIncidentVideo==='function')syncRoadIncidentVideo(S.logistics);
  if(SP.o===SCENES.disaster)scheduleIncidentCameraConnectors();
@@ -1325,10 +1367,21 @@ function havKm(a,b){
  return R*2*Math.asin(Math.sqrt(x));
 }
 SPD.truck=0.7;SPD.uav=1.3; /* km/min：山区公路约42km/h，物流无人机约78km/h */
-/* 仅调整运输动画节奏；路线规划中的预计用时仍按原始运力参数展示。
-   干线车辆按 2.55 倍速播放；空载无人机前置到安全转运点按 0.5 倍速展示飞行过程，载货末端飞行保持原有慢速节奏。 */
-const TASK_PLAYBACK_RATE=Object.freeze({truck:2.55,uav:1/6,team:2});
-function taskPlaybackRate(task){return task?.preposition&&task?.mode==='uav' ? 0.5 :(TASK_PLAYBACK_RATE[task?.mode]||1);}
+/* 运输画面中车辆与无人机统一播放倍率；每段车辆/无人机移动约用5秒展示，路线ETA仍按原始运力参数计算。 */
+const TASK_PLAYBACK_RATE=Object.freeze({truck:1,uav:1,team:2});
+const TASK_TRANSPORT_SECONDS=5,TASK_SIM_UNITS_PER_SECOND=1.25;
+const UAV_PREPOSITION_SPEED_FACTOR=2;
+function taskPlaybackRate(task){return TASK_PLAYBACK_RATE[task?.mode]||1;}
+function taskTransportPlaybackSpan(task){
+ return TASK_TRANSPORT_SECONDS*TASK_SIM_UNITS_PER_SECOND*simulationSpeed()*taskPlaybackRate(task)/(task?.preposition?UAV_PREPOSITION_SPEED_FACTOR:1);
+}
+function taskPlaybackSpan(task){
+ if(task?.mode==='truck'||task?.mode==='uav'){
+  const stored=Number(task?._playbackSpan);
+  return stored>0?stored:taskTransportPlaybackSpan(task);
+ }
+ return Math.max(0,Number(task?.dur)||0);
+}
 function uavCallsign(task,index){
  const ordinal=Number(task?.vehicleNo)||S.tasks.slice(0,index+1).filter(t=>t.mode==='uav').length||index+1;
  return'SC_MY_QS_A003_'+String(ordinal).padStart(2,'0');
@@ -1354,12 +1407,12 @@ function simNow(){
  return Math.max(S.sim,smooth);
 }
 function taskPlaybackElapsed(task){return Math.max(0,simNow()-task.start)*taskPlaybackRate(task);}
-function taskProgress(task){return Math.min(1,taskPlaybackElapsed(task)/Math.max(.001,task.dur||0));}
-function taskPlaybackDuration(task){return Math.max(0,Number(task?.dur)||0)/taskPlaybackRate(task);}
+function taskProgress(task){return Math.min(1,taskPlaybackElapsed(task)/Math.max(.001,taskPlaybackSpan(task)));}
+function taskPlaybackDuration(task){return taskPlaybackSpan(task)/taskPlaybackRate(task);}
 
-/* ============ 场景一：固定事件与研判状态机 ============ */
+/* ============ 场景一：固定事件与辅助分析状态机 ============ */
 const INCIDENT={
- type:'暴雨泥石流',epic:'T1',location:'北川羌族自治县 · 曲山镇 · 沙坝村',
+ type:'山体滑坡、内涝',epic:'T1',location:'北川羌族自治县 · 曲山镇 · 沙坝村',
  village:'沙坝村',monitoring:{},villageReport:{shelteredPeople:96,source:'曲山镇沙坝村村委会'},
  zoom:15.2,radiusKm:.6,
  // 沙坝村附近公开参考点，用于村级演示定位，不作为行政边界。
@@ -1386,7 +1439,7 @@ function rebaseSimulationClocks(){
 }
 function simulationVoiceRate(base=1){return Math.min(10,Math.max(.1,base*simulationSpeed()));}
 function simulationVideoRate(video){
- const slowScene=!!video?.closest('#incidentCameraFloatingLayer,.logistics-lastmile-camera-layer')||SP.o===SCENES.disaster;
+ const slowScene=!!video?.closest('#incidentCameraFloatingLayer')||SP.o===SCENES.disaster;
  return (slowScene?INCIDENT_VIDEO_RATE:1)*simulationSpeed();
 }
 function applySimulationPlaybackSpeed(){
@@ -1395,7 +1448,7 @@ function applySimulationPlaybackSpeed(){
  activeSpeechUtterances.forEach(utterance=>{
   try{utterance.rate=simulationVoiceRate(utterance._simulationBaseRate||1);}catch(e){}
  });
- document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video,.logistics-lastmile-camera-layer video').forEach(video=>{
+ document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video').forEach(video=>{
   const rate=simulationVideoRate(video);
   try{video.defaultPlaybackRate=rate;video.playbackRate=rate;}catch(e){}
  });
@@ -1488,12 +1541,14 @@ function updateIncidentCameraConnectors(){
   const rect=tile.getBoundingClientRect(),x1=rect.left+8,y1=rect.bottom-8,dx=activePoint.x-x1,dy=activePoint.y-y1,len=Math.hypot(dx,dy)||1,r=19;
   lines.push('<line x1="'+(x1-svgRect.left)+'" y1="'+(y1-svgRect.top)+'" x2="'+(activePoint.x-dx/len*r-svgRect.left)+'" y2="'+(activePoint.y-dy/len*r-svgRect.top)+'" stroke="'+INCIDENT_CAMERA_COLORS[incidentCameraSelected]+'" stroke-width="2.5" opacity=".86" stroke-dasharray="7 6" marker-end="url(#incidentArrow'+incidentCameraSelected+')"/>');
  }
- const labelLayout=[{side:'left',dy:-82},{side:'left',dy:-92},{side:'right',dy:4}];
+const labelLayout=routeActive
+ ?[{side:'left',dy:-82},{side:'left',dy:-92},{side:'right',dy:-82}]
+ :[{side:'left',dy:-82},{side:'left',dy:-92},{side:'right',dy:4}];
  INCIDENT.media.forEach((item,index)=>{
   const point=project(item),px=point.x-svgRect.left,py=point.y-svgRect.top,color=INCIDENT_CAMERA_COLORS[index],active=index===incidentCameraSelected;
   const labelW=Math.max(150,item.targetName.length*24+28,(item.targetIssue||'').length*20+28),labelH=76,layout=labelLayout[index]||{side:'right',dy:4};
   let labelX=layout.side==='left'?px-labelW-19:px+19,labelY=py+layout.dy;
-  labelX=Math.max(5,Math.min(innerWidth-labelW-5,labelX));labelY=Math.max(8,Math.min(innerHeight-labelH-8,labelY));
+  labelX=Math.max(5,Math.min(innerWidth-labelW-5,labelX));labelY=Math.max(routeActive&&item.targetNumber===0?zoneRect.top+8:8,Math.min(innerHeight-labelH-8,labelY));
   const attachX=layout.side==='left'?labelX+labelW:labelX,attachY=labelY+23;
   lines.push('<line x1="'+px+'" y1="'+py+'" x2="'+attachX+'" y2="'+attachY+'" stroke="'+color+'" stroke-width="1.5" opacity=".9"/>');
   if(active)lines.push('<circle cx="'+px+'" cy="'+py+'" r="28" fill="none" stroke="'+color+'" stroke-width="2.5" opacity=".85"><animate attributeName="r" values="22;32;22" dur="1.6s" repeatCount="indefinite"/></circle>');
@@ -1537,7 +1592,7 @@ function drawAssessment(){
  const card=document.getElementById('assessmentCard');
  card.classList.toggle('show',a.shown);card.classList.toggle('complete',done);
  card.innerHTML='<div class="assessment-head"><span>收到报警，开始灾情辅助分析</span><span class="assessment-status">'+(done?'分析完成':'计算中')+'</span></div>'
-  +'<div class="assessment-sub">'+INCIDENT.location+'<br>暴雨 · 泥石流 · 道路积水与冲毁</div>'
+  +'<div class="assessment-sub">'+INCIDENT.location+'<br>山体滑坡、内涝 · 道路积水与损毁</div>'
   +'<div class="assessment-monitoring">分析依据：现场监控、灾情监测及村委会现场报告</div>'
   +(done?'<div class="assessment-result"><small>灾情辅助分析结果</small><strong>需紧急调拨应急物资</strong><span class="assessment-estimate">曲山镇沙坝村 · '+result.shelteredPeopleText+'已就近安置</span><span>村委会上报生活保障物资不足，建议立即启动应急物资调拨。</span></div>':'')
   +rows.map(row=>{const ready=done||elapsed>=row.at;return'<div class="assessment-row '+(ready?'ready':'pending')+'"><div class="assessment-row-head"><span>'+row.label+'</span><span class="assessment-row-state">'+(ready?'已汇总':'计算中')+'</span></div><div class="assessment-value">'+(ready?row.value:'正在分析监控画面与区域暴露情况')+'</div></div>';}).join('')
@@ -1548,8 +1603,8 @@ function beginIncident(){
  const a=S.incident;
  document.body.classList.add('incident-scene');
  document.getElementById('incidentBanner').classList.add('show');
- document.getElementById('mapStage').textContent='沙坝村 · 灾情触发与研判';
- speak('灾情警报。实时监控监测到，北川曲山镇沙坝村因持续暴雨发生泥石流灾害。正在开展灾情综合研判。',true);
+ document.getElementById('mapStage').textContent='沙坝村 · 灾情触发与辅助分析';
+ speak('灾情警报。实时监控监测到，北川曲山镇沙坝村因强降雨发生山体滑坡、内涝灾害。正在开展智能体辅助分析。',true);
  a.lastTick=performance.now();
  a.timer=setInterval(incidentTick,200);
 }
@@ -1563,14 +1618,14 @@ function incidentTick(){
  if(a.elapsed>=INCIDENT.analysisAt&&!a.complete){
   a.complete=true;a.result=incidentResult();
   document.getElementById('incidentBanner').classList.add('complete');
-  document.getElementById('incidentEyebrow').textContent='灾情综合研判完成 · 持续监测中';
-  document.getElementById('incidentTitle').textContent='曲山镇沙坝村暴雨泥石流灾害';
+  document.getElementById('incidentEyebrow').textContent='灾情辅助分析完成 · 持续监测中';
+  document.getElementById('incidentTitle').textContent='曲山镇沙坝村山体滑坡、内涝灾害';
   document.getElementById('incidentDescription').textContent='村委会上报：'+a.result.shelteredPeopleText+'已就近安置完成，物资不足需要调拨。';
   document.getElementById('mapStage').textContent='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
   setBusy('CMD',false);S.curCmd.CMD='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
-  addLog('back','市级应急指挥系统','灾情综合研判完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>');
-  speak('灾情综合研判完成。'+INCIDENT.villageReport.source+'上报，'+a.result.shelteredPeopleText+'已就近安置完成，当前物资不足，需要调拨。受灾范围已聚焦曲山镇沙坝村。',true);
-  speakEmphasis('过去，靠人找信息；现在，让信息找人！',true);
+  addLog('back','市级应急指挥系统','灾情辅助分析完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>');
+  speak(INCIDENT.villageReport.source+'上报，'+a.result.shelteredPeopleText+'已就近安置完成，当前物资不足，需要调拨。',true);
+
   VIEW.focus(INCIDENT.epic);
   renderPanels();drawKpis();updateClock();
  }
@@ -1591,7 +1646,7 @@ function leaveIncident(){
 }
 function setIncidentPaused(paused){
  S.incident.lastTick=performance.now();
- document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video,.logistics-lastmile-camera-layer video').forEach(v=>{if(paused)v.pause();else v.play().then(()=>{
+ document.querySelectorAll('#mediaStage video,#incidentCameraFloatingLayer video').forEach(v=>{if(paused)v.pause();else v.play().then(()=>{
   if(v.closest('#incidentCameraFloatingLayer'))scheduleIncidentCameraAdvance(incidentCameraVisibleDuration());
  }).catch(()=>{
   const retry=document.querySelector('#incidentCameraFloatingLayer .incident-camera-link-button');
@@ -1602,7 +1657,7 @@ function setIncidentPaused(paused){
  if(badge)badge.textContent=paused?'分析已暂停':S.incident.complete?'分析完成':'计算中';
 }
 
-/* ============ 研判 ============ */
+/* ============ 辅助分析 ============ */
 function buildScenario(){
  const epic=S.cfg.epic;
  // 受灾范围和道路阻断依据本次监测点位与现场监测结果确定，不进行响应等级预判。
@@ -1670,7 +1725,7 @@ function fetchRoadRoute(t,idx){
  },(idx||0)*400);
 }
 /* ============ 步骤定义（10步，对齐泳道） ============ */
- const TYPE_NAME={暴雨泥石流:'暴雨泥石流灾害'};
+ const TYPE_NAME={'山体滑坡、内涝':'山体滑坡、内涝灾害'};
 function townName(id){return ALL[id].name.split('·')[0];}
 function thirdPartyText(){
  const cs=[...new Set(S.tasks.map(t=>t.carrier))];
@@ -1690,8 +1745,8 @@ function applyNodeStates(){
 }
 /* ============ 步骤定义（10步） ============ */
 const STEP_DEFS=[
-  {active:['CMD'],busy:[['CMD','暴雨泥石流灾情综合研判中']],
-   logs:[['down','市级应急指挥系统','实时监测触发：<b>北川曲山镇沙坝村暴雨泥石流灾害</b>，调取现场监控并接收村委会现场报告，核查受灾范围与道路受损情况']],
+  {active:['CMD'],busy:[['CMD','山体滑坡、内涝灾情辅助分析中']],
+   logs:[['down','市级应急指挥系统','实时监测触发：<b>北川曲山镇沙坝村山体滑坡、内涝灾害</b>，调取现场监控并接收村委会现场报告，核查受灾范围与道路受损情况']],
    focus:()=>S.cfg.epic,
    calc:()=>{buildScenario();applyNodeStates();beginIncident();}},
   {active:['WH'],busy:[['WH','核对村委会上报物资清单']],
@@ -1709,15 +1764,14 @@ const STEP_DEFS=[
  {active:['WH','TR'],busy:[['WH','物资出库中'],['TR','投送中']],
   logs:[['down','仓储 / 网点资源系统',()=>`下达<b>物资调拨指令</b>：${S.tasks.filter(t=>t.mode==='truck').length}批仓库出库，${S.tasks.filter(t=>t.finalDelivery).length}批末端投送；另有${S.tasks.filter(t=>t.preposition).length}架次无人机空机前置`],
         ['down','物流运输配送系统','下达<b>运力调度指令</b>，承运单元出发']],
-   speak:()=>'物资调拨已启动，按协同方案投送，签收结果将自动回传。'},
+   speak:()=>'物资调拨已启动，按协同方案投送。'},
  {active:['TR'],free:['WH'],
   logs:[['back','物流运输配送系统','首批物资送达，<b>签收确认</b>']],
    speak:()=>'首批物资到达沙坝村，开始签收分发。',calc:applyNodeStates},
  {free:['TR','CMD'],
   logs:[['back','物流运输配送系统',()=>`闭环签收完成：沙坝村点位已确认送达；配送结果：${logisticsDeliveredText(S.logistics)}。`],
-        ['back','市级应急指挥系统','所有需求已满足，<b>调度结束</b>'],
-        ['back','仓储 / 网点资源系统',()=>`调度结束后，各供货仓物资剩余库存已同步：<br>${logisticsRemainingStockText(S.logistics)}`]],
-   hideScene:true,speak:()=>'所有投送任务已完成，本次调度结束，剩余库存已同步。',tagline:'送达即闭环，数据不等待！',calc:applyNodeStates}
+        ['back','市级应急指挥系统','所有需求已满足，<b>调度结束</b>']],
+   hideScene:true,speak:()=>'所有投送任务已完成，本次调度结束。',calc:applyNodeStates}
 ];
 /* ============ 进入步骤（四联动） ============ */
 const STEP_SIM=[0,1,2,3.5,5,6,7,8];
@@ -1766,7 +1820,7 @@ function enterStep(i,options={}){
  else if(d.focus)VIEW.focus(d.focus);
  if(d.hideScene)M.hideScene();
  if(d.scene)M.showScene(SCENES[d.scene]);
- if(d.speak&&[7,8,9].includes(i)&&!S.timelineReview){const t=d.speak();if(t)speak(t,true);if(d.tagline)speakEmphasis(d.tagline,true);}
+ if(d.speak&&[7,8,9].includes(i)&&!S.timelineReview){const t=d.speak();if(t)speak(t,true);}
  if(d.calc)d.calc();
  if(i===7){
    if(S.logistics){clearInterval(S.logistics.uiTimer);S.logistics.uiTimer=null;}
@@ -1801,6 +1855,11 @@ function scheduleStep(){
 /* ============ 投送（step7后，速度控制） ============ */
 function startTransport(){
  clearTimeout(S.stepTimer);
+ S.tasks.forEach(task=>{
+  if((task.mode==='truck'||task.mode==='uav')&&!(Number(task._playbackSpan)>0)){
+   task._playbackSpan=taskTransportPlaybackSpan(task);
+  }
+ });
  if(M.online&&S.tasks.length&&!S.flew){
   S.flew=true;
   const llp=[];
@@ -1853,7 +1912,7 @@ function transportTick(){
    if(t.preposition){t.status='hold';S.routesDirty=true;logisticsTaskArrived(t);}
    else{t.status='done';logisticsTaskArrived(t);}
   }});
- syncLastMileCamera(S.logistics);
+ 
   if(S.step===7&&S.tasks.some(t=>t.status==='done'&&t.finalDelivery!==false)&&!S.partialDone){S.partialDone=true;enterStep(8);}
  if(S.step>=8&&S.tasks.length&&S.tasks.every(t=>t.status==='done')&&S.step<9){if(confirmLogisticsQuantities())enterStep(9);else finish();}
  /* 运输阶段左侧系统卡与日志不变，仅刷新任务/浮卡/KPI/时钟，降低整页重排开销 */
@@ -1896,7 +1955,7 @@ function jumpAct(targetAct){
   if(!a.complete){
    a.elapsed=Math.max(a.elapsed,INCIDENT.analysisAt);a.complete=true;a.result=incidentResult();
    setBusy('CMD',false);S.curCmd.CMD='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
-   addLog('back','市级应急指挥系统','灾情综合研判完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>');
+   addLog('back','市级应急指挥系统','灾情辅助分析完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>');
   }
   S.paused=false;enterStep(1);return;
  }
@@ -1987,9 +2046,9 @@ const SCENES={
   want:'视频或图片（装车/出发动态）',media:[]},
  thirdparty:{tag:'第三方物流',title:'第三方物流企业',desc:'自有运力不足时，调度交投、顺丰、京东等第三方物流企业车辆补位。',sceneKey:'第三方物流企业车辆',
   want:'图片 2-3 张',media:[]},
- roadblock:{tag:'道路研判',title:'道路中断与塌方点',desc:'探明道路塌方、桥梁损毁、内涝积水位置，决定绕行或空陆协同。',sceneKey:'道路中断/塌方/断桥',
+ roadblock:{tag:'道路辅助分析',title:'道路中断与塌方点',desc:'探明道路塌方、桥梁损毁、内涝积水位置，决定绕行或空陆协同。',sceneKey:'道路中断/塌方/断桥',
   want:'视频或图片（塌方/断桥）',media:[]},
- command:{tag:'上级政府',title:'应急指挥中心',desc:'辖区能力不足时上报上级，由指挥中心统一研判、跨区域调拨。',sceneKey:'应急指挥中心/大屏',
+ command:{tag:'上级政府',title:'应急指挥中心',desc:'辖区能力不足时上报上级，由指挥中心统一分析、跨区域调拨。',sceneKey:'应急指挥中心/大屏',
   want:'图片 1-2 张',media:[]},
  dispatch:{tag:'空地协同',title:'无人机与救援人员接驳',desc:'车辆抵达安全转运点后，无人机优先投送轻型急需物资，救援人员沿安全通道转运其余物资。',sceneKey:'无人机/救援人员/货运车辆',
   want:'视频为主（无人机/车辆投送动态），可加图片',media:[]},
@@ -2020,11 +2079,7 @@ function trackSpeechUtterance(utterance,baseRate){
  utterance.addEventListener('error',release,{once:true});
  return utterance;
 }
-const EMPHASIS_CLIPS={
- '过去靠人找信息现在让信息找人':'assets/voice/closing-incident.mp3',
- '路断了系统自动找路':'assets/voice/closing-route.mp3',
- '送达即闭环数据不等待':'assets/voice/closing-closedloop.mp3'
-};
+const EMPHASIS_CLIPS={};
 let emphasisAudio=null,emphasisWaitTimer=0,emphasisRequest=0;
 function emphasisKey(text){return String(text||'').replace(/[，。！？、；：,.!?\s]/g,'');}
 function cancelEmphasisAudio(){
@@ -2148,9 +2203,9 @@ function drawCtl(){
  const prevDisabled=!S.started||phaseIndex===0||S.step>=7&&!completedTimeline&&!activeTransportReviewable||confirmationPending;
  const nextDisabled=!S.started||phaseIndex===3||S.timelineReview&&S.step===8&&!completedTimeline||nextWaitsForInitialRoutes||nextWaitsForTasks||nextWaitsForRoads||confirmationPending;
  const navBlockedTitle=confirmationPending?'请先在确认弹窗中完成当前节点确认':nextWaitsForInitialRoutes?'初始配送路线仍在计算中，完成后即可继续':nextWaitsForRoads?'路线仍在测算中，完成后即可进入下一阶段':nextWaitsForTasks?'正在生成协同任务，请稍候':S.step>=9?'已到达最后阶段':S.step>=7&&!completedTimeline&&!S.timelineReview?'运输阶段按任务进度推进；可用上一阶段回看':'进入时间轴下一阶段';
- let h=S.started?'<div class="scenario-lock"><div class="eyebrow">固定事件场景 · 灾情监测与处置</div><strong>暴雨引发泥石流灾害</strong>'
+ let h=S.started?'<div class="scenario-lock"><div class="eyebrow">固定事件场景 · 灾情监测与处置</div><strong>强降雨引发山体滑坡、内涝灾害</strong>'
    +'<div class="location">'+INCIDENT.location+'</div><div class="assessment-summary">'
-   +(S.incident.complete?S.incident.result.shelteredPeopleText+'已就近安置 · 村委会上报物资不足需调拨':'灾情综合研判中…')+'</div></div>':'';
+   +(S.incident.complete?S.incident.result.shelteredPeopleText+'已就近安置 · 村委会上报物资不足需要调拨':'灾情辅助分析中…')+'</div></div>':'';
  h+=`<div class="act-nav"><button type="button" id="btnPrevAct" ${prevDisabled?'disabled':''} title="${confirmationPending?'请先在确认弹窗中完成当前节点确认':'返回时间轴上一阶段'}">‹ 上一阶段</button>
    <div class="act-nav-title" title="${S.started?`${phaseIndex+1}/4 · ${stageName}`:'灾情分析'}">${S.started?`${phaseIndex+1}/4 · ${stageName}`:'灾情分析'}</div>
    <button type="button" id="btnNextAct" ${nextDisabled?'disabled':''} title="${navBlockedTitle}">下一阶段 ›</button></div>`;
@@ -2244,12 +2299,9 @@ function drawKpis(){
 
 /* ============ 时钟 / 徽标 ============ */
 function updateClock(){
- const mm=Math.floor(S.sim);
- document.getElementById('clock').textContent=
-  `T+${String(mm).padStart(2,'0')}:${String(Math.min(59,Math.round((S.sim-mm)*60))).padStart(2,'0')}`;
  const ab=document.getElementById('alertBadge'),at=document.getElementById('alertTxt');
  if(!S.started){ab.className='alert-badge';at.textContent='常态监测';}
-  else if(S.step===0){ab.className='alert-badge danger';at.textContent=S.incident.complete?'灾情研判完成':'暴雨泥石流警报';}
+  else if(S.step===0){ab.className='alert-badge danger';at.textContent=S.incident.complete?'灾情辅助分析完成':'山体滑坡、内涝灾害警报';}
  else if(S.step<9){ab.className='alert-badge danger';at.textContent='应急响应';}
  else{ab.className='alert-badge';at.textContent='响应结束 · 可复位重推';}
 }
@@ -2271,7 +2323,7 @@ function reset(){
    focusRequested:false,mapFocusReady:false};
   document.getElementById('incidentBanner').classList.remove('complete');
   document.getElementById('incidentEyebrow').textContent='突发灾情警报 · 实时监测触发';
-  document.getElementById('incidentTitle').textContent='北川曲山镇沙坝村因持续暴雨发生泥石流灾害';
+  document.getElementById('incidentTitle').textContent='北川曲山镇沙坝村因强降雨发生山体滑坡、内涝灾害';
   document.getElementById('incidentDescription').textContent='收到报警，开始灾情辅助分析';
   document.getElementById('assessmentCard').classList.remove('complete');
   document.getElementById('assessmentCard').innerHTML='';
