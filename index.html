@@ -708,7 +708,7 @@ const S={phase:0,step:0,sim:0,simRender:0,stepTimer:null,transportTimer:null,int
  affected:[],blocked:new Set(),demands:{},tasks:[],logs:[],
  radius:0,targetR:0,seed:1,stock:{},usedT:{},usedU:{},busy:{},curCmd:{},muted:false,layer:'sat',
   activeNow:[],engaged:{},routesDirty:true,flew:false,
-   incident:{timer:null,elapsed:0,lastTick:0,videoShown:false,shown:false,complete:false,result:null,cameraSeen:[],
+   incident:{timer:null,elapsed:0,lastTick:0,videoShown:false,shown:false,complete:false,reportAnnounced:false,result:null,cameraSeen:[],
     focusRequested:false,mapFocusReady:false},logistics:null};
 /* ===== 工具：稳定哈希 ===== */
 function hash01(i,seed){const x=Math.sin(i*127.1+seed*311.7)*43758.5453;return x-Math.floor(x);}
@@ -864,6 +864,14 @@ function syncSatelliteRoadOverlay(){
  const tileNamesAvailable=regionalView&&(M._annoOk||0)>0;
  Object.values(M.adminAreaMarkers).forEach(marker=>marker.setOpacity(S.layer==='sat'&&(!regionalView||!tileNamesAvailable)?1:0));
 }
+const MAP_OVERVIEW={center:[31.87,104.74],zoom:8.75};
+const MIANYANG_SPOT_MAX_ZOOM=10.5;
+function syncMianyangSpotVisibility(){
+ if(!M.map||!M.spot)return;
+ const visible=M.map.getZoom()<=MIANYANG_SPOT_MAX_ZOOM;
+ if(visible&&!M.map.hasLayer(M.spot))M.spot.addTo(M.map);
+ else if(!visible&&M.map.hasLayer(M.spot))M.spot.remove();
+}
 const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},units:{},routeL:null,focusM:null,
  visible(){return !!M.map&&!document.getElementById('mapWrap').classList.contains('fallback');},
  applyMianyangSpot(){
@@ -890,13 +898,13 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
   const el=document.getElementById('mapLeaflet');
   if(M.map||el._leaflet_id)return;
   const map=L.map(el,{zoomControl:false,attributionControl:false,doubleClickZoom:false,
-   boxZoom:false,keyboard:false,zoomAnimation:false,fadeAnimation:false,zoomSnap:.25}).setView([31.87,104.74],8.75);
+   boxZoom:false,keyboard:false,zoomAnimation:false,fadeAnimation:false,zoomSnap:.25}).setView(MAP_OVERVIEW.center,MAP_OVERVIEW.zoom);
   M.map=map;
   const updateMapLabelScale=()=>{
    const zoom=map.getZoom(),scale=zoom<=5?0.5:zoom<=6?0.55:zoom<=7?0.67:zoom<=8?0.8:zoom<=9?0.9:1;
    el.style.setProperty('--map-label-scale',String(scale));
   };
-  updateMapLabelScale();map.on('zoomend',()=>{updateMapLabelScale();syncSatelliteRoadOverlay();});
+  updateMapLabelScale();map.on('zoomend',()=>{updateMapLabelScale();syncSatelliteRoadOverlay();syncMianyangSpotVisibility();});
   map.on('moveend zoomend resize',scheduleMapLabelLayout);
   mapLabelObserver=new MutationObserver(scheduleMapLabelLayout);
   mapLabelObserver.observe(el,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden']});
@@ -943,6 +951,7 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
  M.baseSat.on('tileerror',()=>M._satBad++);
   /* 开场即绘制随页面内置的绵阳市界，遮暗市域外区域并突出本次演示范围。 */
   M.applyMianyangSpot();
+  syncMianyangSpotVisibility();
   setTimeout(()=>map.invalidateSize(),100);
  setTimeout(()=>{if(M.map)map.invalidateSize();},350);
  setTimeout(()=>{if(M.map)map.invalidateSize();},800);
@@ -959,10 +968,8 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
   M.nodeMarkers[LOGISTICS_CFG.handoff]?.setOpacity(logisticsTransferPointVisible(S.logistics)?1:0);
   M.routeL.clearLayers();
    if(S.logistics&&S.logistics.active){drawLogisticsMap();return;}
-  if(S.phase>=1){const c=ll(S.cfg.epic),flood=S.cfg.type==='洪灾';
-   L.circle(c,{radius:S.radius*1000,color:flood?'#3b8eed':'#ef4444',weight:2,dashArray:'5 5',
-    fillColor:flood?'#3b8eed':'#ef4444',fillOpacity:.12}).addTo(M.routeL);}
-  /* 断路标识仅在路线规划阶段显示，灾情触发/辅助分析阶段只呈现灾情范围。 */
+  /* 灾情点用点位与聚焦标识表达；避免范围圈被误看成道路封闭线。 */
+  /* 断路标识仅在路线规划阶段显示；灾情阶段只呈现事件点位与现场视频。 */
   if(S.step===5)S.blocked.forEach(k=>{const e=EDGES[k];
    L.polyline([ll(e.a),ll(e.b)],{color:'#ef4444',weight:3,dashArray:'7 6',opacity:.9}).addTo(M.routeL);});
   S.tasks.forEach(t=>{
@@ -1090,7 +1097,8 @@ const M={online:false,map:null,moving:false,nodeMarkers:{},adminAreaMarkers:{},u
  },
  resetView(){
   if(!M.visible())return;
-  M.map.flyTo([31.55,104.82],8,{duration:.6});
+  /* 复位与开场总览保持同一视角，避免启动健康检查完成后地图突然缩小并偏移。 */
+  M.map.flyTo(MAP_OVERVIEW.center,MAP_OVERVIEW.zoom,{duration:.6});
   if(M.focusM){M.map.removeLayer(M.focusM);M.focusM=null;}
   M.routeL.clearLayers();
   Object.values(M.units).forEach(x=>M.map.removeLayer(x));M.units={};
@@ -1215,8 +1223,7 @@ function drawFallback(){
  REGIONS.forEach(r=>{
   h+=`<polygon points="${r.pts.map(p=>p.join(',')).join(' ')}" fill="${TH.land}" stroke="${TH.line}"/>`;
   h+=`<text x="${r.cen[0]}" y="${r.cen[1]}" font-size="22" fill="${TH.label}" text-anchor="middle">${r.name}</text>`;});
- if(S.phase>=1){const c=ALL[S.cfg.epic],flood=S.cfg.type==='洪灾';
-  h+=`<circle cx="${c.x}" cy="${c.y}" r="${S.radius*15}" fill="${flood?'rgba(56,150,230,.12)':'rgba(255,90,82,.08)'}" stroke="${flood?'rgba(56,150,230,.5)':'rgba(255,90,82,.5)'}" stroke-dasharray="5 5"/>`;}
+ /* 灾情点用点位与聚焦标识表达；离线示意图也不绘制范围圈。 */
  const showBlockedRoads=S.step===5&&!(S.logistics?.active&&S.logistics.routeRolloverActivated);
  EDGES.forEach((e,k)=>{const a=ALL[e.a],b=ALL[e.b];
   h+=showBlockedRoads&&S.blocked.has(k)
@@ -1237,20 +1244,20 @@ function drawFallback(){
      const points=ids.map(id=>ALL[id]).filter(Boolean).map(p=>p.x+','+p.y).join(' ');
      if(points)h+='<polyline points="'+points+'" fill="none" stroke="'+color+'" stroke-width="'+width+'" stroke-opacity="'+opacity+'" stroke-dasharray="'+dash+'" stroke-linecap="round" stroke-linejoin="round"/>';
     };
-    if(!S.logistics.routeRolloverActivated){
+     if(!S.logistics.routeRolloverActivated){
      if(S.logistics.initialRoutesVisible)S.logistics.initialRoutes.forEach((route,i)=>drawFallbackRoute(fallbackRoadNodes(route.depot,LOGISTICS_CFG.handoff),['#70c7ff','#b29aff','#57dac3'][i%3],3.2,.95,'8 5'));
     }else{
-     S.logistics.routes.filter(route=>route.detoured).forEach(route=>drawFallbackRoute(fallbackRoadNodes(route.depot,LOGISTICS_CFG.handoff),'#aeb7c6',2.5,.42,'7 6'));
       S.logistics.routes.forEach((route,i)=>drawFallbackRoute(fallbackRouteNodes(route),['#70c7ff','#b29aff','#57dac3'][i%3],route===S.logistics.fastest?4.5:3.2,.96,'7 4'));
     }
    }
-    if(S.step===4&&S.logistics.routeRolloverDetected&&S.logistics.planned&&!S.logistics.routeRolloverActivated){const road=LOGISTICS_CLOSED_ROAD.fallbackPath.map(p=>p.join(',')).join(' '),a=S.logistics,alertPending=a.roadClosurePromptReady===false,elapsed=alertPending?Math.max(0,performance.now()-a.roadClosureAlertStartedAt):0,
+     if(S.step===4&&S.logistics.routeIncidentOverlaysVisible&&!S.logistics.routeRolloverActivated){const road=LOGISTICS_CLOSED_ROAD.fallbackPath.map(p=>p.join(',')).join(' '),a=S.logistics,alertPending=a.roadClosurePromptReady===false,elapsed=alertPending?Math.max(0,performance.now()-a.roadClosureAlertStartedAt):0,
      flash=.2+.8*Math.pow(Math.abs(Math.sin(elapsed/1000*Math.PI*2)),4),lineOpacity=alertPending?flash:1,lineWidth=alertPending?3.5+flash*2.5:5;
     h+='<polyline points="'+road+'" fill="none" stroke="#171018" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>'
      +'<polyline points="'+road+'" fill="none" stroke="#ff3f43" stroke-width="'+lineWidth.toFixed(1)+'" stroke-opacity="'+lineOpacity.toFixed(2)+'" stroke-linecap="round" stroke-linejoin="round"/>';
     h+='<circle cx="'+c.x+'" cy="'+c.y+'" r="'+(alertPending?8+flash*3:10)+'" fill="#ff5348" fill-opacity="'+(alertPending?(.08+flash*.16):'.18')+'" stroke="#ff655f" stroke-width="2"/>';
     if(!alertPending)h+='<text x="'+c.x+'" y="'+(c.y+6)+'" fill="#ff655f" font-size="18" font-weight="900" text-anchor="middle">×</text>';}
     if(S.step===4&&S.logistics.routeRolloverActivated&&S.logistics.planned||S.step>=6)h+='<circle cx="'+d.x+'" cy="'+d.y+'" r="7" fill="#ffd166"/><text x="'+(d.x+22)+'" y="'+(d.y-14)+'" font-size="18" fill="#ffe6a3">S105绕行点</text>';
+    if(S.step===4&&S.logistics.routeRolloverActivated&&S.logistics.routeDroneLineVisible){const from=ALL[LOGISTICS_CFG.handoff],to=INCIDENT.media.find(item=>item.targetNumber===2)||INCIDENT.media[1];h+='<line x1="'+from.x+'" y1="'+from.y+'" x2="'+to.targetX+'" y2="'+to.targetY+'" stroke="#50e3ed" stroke-width="2.5" stroke-dasharray="5 7" opacity=".95"/><circle cx="'+to.targetX+'" cy="'+to.targetY+'" r="13" fill="#ffc264" stroke="#fff" stroke-width="2"/><text x="'+to.targetX+'" y="'+(to.targetY+6)+'" text-anchor="middle" font-size="17" font-weight="900" fill="#061421">2</text>';}
    if(S.step>=7)S.tasks.filter(t=>t.preposition&&['run','hold'].includes(t.status)).forEach((t,i)=>{const a=ALL[t.via[0]],b=ALL[t.via[1]];
     h+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#50e3ed" stroke-width="2" stroke-dasharray="4 5" opacity=".82"/>';});
   }
@@ -1415,7 +1422,7 @@ function taskPlaybackDuration(task){return taskPlaybackSpan(task)/taskPlaybackRa
 /* ============ 场景一：固定事件与辅助分析状态机 ============ */
 const INCIDENT={
  type:'山体滑坡、内涝',epic:'T1',location:'北川羌族自治县 · 曲山镇 · 沙坝村',
- village:'沙坝村',monitoring:{},villageReport:{shelteredPeople:96,source:'曲山镇沙坝村村委会'},
+ village:'沙坝村',monitoring:{},villageReport:{shelteredPeople:96,source:'沙坝村村委会'},
  zoom:15.2,radiusKm:.6,
  // 沙坝村附近公开参考点，用于村级演示定位，不作为行政边界。
  // 坐标来源：https://html.rhhz.net/dqwlxb/20101006.htm （图10）
@@ -1476,15 +1483,96 @@ function renderIncidentMonitorGrid(initialIndex=0){
 }
 function routePlanningCameraContext(){
  const a=S.logistics;
- return!!(a&&a.active&&S.step===4&&!a.routeRolloverActivated&&a.routeCameraReady&&a.routeIncidentSequenceStarted);
+ return!!(a&&a.active&&S.step===4&&!a.routeRolloverActivated&&a.routeCameraReady&&a.routeCameraDisplayEnabled&&a.routeIncidentSequenceStarted);
+}
+function focusRouteIncidentCamera(mode,a=S.logistics){
+ if(!a||S.logistics!==a||!a.active||S.step!==4)return Promise.resolve(false);
+ if(a.routeCameraFocusMode===mode){scheduleIncidentCameraConnectors();return Promise.resolve(true);}
+ a.routeCameraFocusMode=mode;
+ const hazardItems=INCIDENT.media.filter(item=>item.targetNumber===1||item.targetNumber===3);
+ const finish=()=>{
+  if(S.logistics!==a||!a.active||S.step!==4)return false;
+  if(mode==='hazards'&&M.visible())a.routeHazardFocusZoom=M.map.getZoom();
+  scheduleIncidentCameraConnectors();
+  return true;
+ };
+ if(M.visible()&&M.map){
+  const left=document.querySelector('.panel-left')?.getBoundingClientRect().width||330;
+  const right=document.querySelector('.panel-right')?.getBoundingClientRect().width||350;
+  return new Promise(resolve=>{
+   let settled=false;
+   const complete=()=>{
+    if(settled)return;settled=true;
+    if(a._routeFocusTimer){clearTimeout(a._routeFocusTimer);a._routeFocusTimer=null;}
+    M.map.off('moveend',complete);resolve(finish());
+   };
+   M.map.on('moveend',complete);
+   a._routeFocusTimer=setTimeout(complete,1800);
+   if(mode==='hazards'){
+    const bounds=L.latLngBounds(hazardItems.map(item=>wgs2gcj(item.targetLng,item.targetLat)));
+    M.map.flyToBounds(bounds,{paddingTopLeft:[left+42,118],paddingBottomRight:[right+42,138],maxZoom:INCIDENT.zoom,duration:.95});
+    }else if(mode==='accident'){
+     M.map.flyTo(wgs2gcj(LOGISTICS_CLOSED_ROAD.lng,LOGISTICS_CLOSED_ROAD.lat),a.routeHazardFocusZoom||INCIDENT.zoom,{duration:.85});
+    }else{
+    const point=hazardItems.find(item=>item.targetNumber===3)||INCIDENT.media[2];
+    M.map.flyTo(wgs2gcj(point.targetLng,point.targetLat),a.routeHazardFocusZoom||INCIDENT.zoom,{duration:.85});
+   }
+   /* 已经在目标视野时 Leaflet 不一定再次发出 moveend。 */
+   setTimeout(complete,1900);
+  });
+ }
+ const svg=document.getElementById('mapFallback');
+ if(svg){
+  if(mode==='hazards'){
+   const cx=hazardItems.reduce((n,item)=>n+item.targetX,0)/hazardItems.length;
+   const cy=hazardItems.reduce((n,item)=>n+item.targetY,0)/hazardItems.length;
+   a.routeHazardFocusZoom=INCIDENT.zoom;
+   a.routeHazardFocusViewBox={x:cx-60,y:cy-54,width:120,height:108};
+  }
+  const box=a.routeHazardFocusViewBox||{x:INCIDENT.media[2].targetX-60,y:INCIDENT.media[2].targetY-54,width:120,height:108};
+   const point=mode==='accident'?LOGISTICS_CLOSED_ROAD:null;
+   svg.setAttribute('viewBox',point?`${point.x-box.width/2} ${point.y-box.height/2} ${box.width} ${box.height}`:`${box.x} ${box.y} ${box.width} ${box.height}`);
+  drawFallback();
+ }
+ scheduleIncidentCameraConnectors();
+ return Promise.resolve(true);
+}
+function focusLogisticsDroneRoute(a=S.logistics){
+ if(!a||S.logistics!==a||!a.active||S.step!==4||!a.planned||!a.routeRolloverActivated)return Promise.resolve(false);
+ const villagePoint=INCIDENT.media.find(item=>item.targetNumber===2)||INCIDENT.media[1];
+ const reveal=()=>{
+  if(S.logistics!==a||!a.active||S.step!==4)return false;
+  a.routeDroneLineVisible=true;S.routesDirty=true;VIEW.draw();drawLogisticsPanels();
+  return true;
+ };
+ if(M.visible()&&M.map){
+  const left=document.querySelector('.panel-left')?.getBoundingClientRect().width||330;
+  const right=document.querySelector('.panel-right')?.getBoundingClientRect().width||350;
+   const hazardPoints=INCIDENT.media.filter(item=>item.targetNumber===1||item.targetNumber===3).map(item=>wgs2gcj(item.targetLng,item.targetLat));
+   const bounds=L.latLngBounds([ll(LOGISTICS_CFG.handoff),wgs2gcj(villagePoint.targetLng,villagePoint.targetLat),...hazardPoints]);
+  return new Promise(resolve=>{
+   let settled=false;
+   const finish=()=>{if(settled)return;settled=true;clearTimeout(a._routeDeliveryFocusTimer);M.map.off('moveend',finish);resolve(reveal());};
+   M.map.on('moveend',finish);
+   a._routeDeliveryFocusTimer=setTimeout(finish,1900);
+   M.map.flyToBounds(bounds,{paddingTopLeft:[left+42,112],paddingBottomRight:[right+42,136],maxZoom:INCIDENT.zoom,duration:1.05});
+  });
+ }
+ const from=ALL[LOGISTICS_CFG.handoff],to=villagePoint,svg=document.getElementById('mapFallback');
+  if(svg){const points=[from,{x:to.targetX,y:to.targetY},...INCIDENT.media.filter(item=>item.targetNumber===1||item.targetNumber===3).map(item=>({x:item.targetX,y:item.targetY}))];
+   const xs=points.map(point=>point.x),ys=points.map(point=>point.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+   const width=Math.max(150,maxX-minX+70),height=Math.max(126,maxY-minY+60),cx=(minX+maxX)/2,cy=(minY+maxY)/2;
+   svg.setAttribute('viewBox',`${cx-width/2} ${cy-height/2} ${width} ${height}`);drawFallback();}
+ return Promise.resolve(reveal());
 }
 function incidentCameraContextActive(){return SP.o===SCENES.disaster||routePlanningCameraContext();}
 function incidentCameraItems(){
  if(!routePlanningCameraContext())return INCIDENT.media;
- const items=[INCIDENT.media[0],INCIDENT.media[2]];
  const closed=LOGISTICS_CLOSED_ROAD;
-  items.push({type:'video',src:'assets/monitoring/truck-rollover.mp4',cap:'原定规划道路事故',cameraKey:'truck-rollover',cameraBadge:'!',cameraColor:'#ff5b61',targetNumber:0,targetName:'道路事故点',targetIssue:'原定规划道路发生事故，无法通行',targetLat:closed.lat,targetLng:closed.lng,targetX:closed.x,targetY:closed.y});
- return items;
+  const rollover={type:'video',src:'assets/monitoring/truck-rollover.mp4',cap:closed.narrationName+'交通事故',cameraKey:'truck-rollover',cameraBadge:'!',cameraColor:'#ff5b61',targetNumber:0,targetName:closed.roadName,targetIssue:closed.locationName+'路段发生交通事故，当前无法通行',targetLat:closed.lat,targetLng:closed.lng,targetX:closed.x,targetY:closed.y};
+  if(S.logistics.routeCameraContentMode==='accident')return[rollover];
+  if(S.logistics.routeCameraContentMode==='hidden')return[];
+  return[INCIDENT.media[0],INCIDENT.media[2]];
 }
 function incidentCameraItemColor(item,index){
  if(item.cameraColor)return item.cameraColor;
@@ -1496,7 +1584,8 @@ function incidentCameraItemColor(item,index){
 function activateRouteRolloverAfterVideo(item){
  const a=S.logistics;
   if(item?.cameraKey!=='truck-rollover'||!a||!a.active||S.step!==4||a.routeRolloverDetected)return;
-  a.routeRolloverDetected=true;a.roadClosurePromptReady=false;a.roadClosureAlertStartedAt=performance.now();
+   if(!a.roadDataPrepared)scanDeliveryRoads();
+   a.routeRolloverDetected=true;a.routeIncidentOverlaysVisible=true;a.roadClosurePromptReady=false;a.roadClosureAlertStartedAt=performance.now();
   if(typeof maybeActivateRouteRollover==='function')maybeActivateRouteRollover(a);
  clearTimeout(a.roadClosureAlertTimer);a.roadClosureAlertTimer=setTimeout(()=>{
    a.roadClosureAlertTimer=null;if(S.logistics!==a||!a.active||S.step!==4)return;
@@ -1507,10 +1596,11 @@ function activateRouteRolloverAfterVideo(item){
 }
 function setRouteIncidentCameraReady(ready){
  const a=S.logistics,active=!!(ready&&a&&a.active&&S.step===4&&a.routeIncidentSequenceStarted);
+ if(a&&a.active&&S.step===4)a.routeCameraDisplayEnabled=active;
  document.body.classList.toggle('route-camera-stage',!!(a&&a.active&&S.step===4));
  document.body.classList.toggle('route-camera-ready',active);
  if(!active){
-  if(SP.o!==SCENES.disaster){clearTimeout(incidentCameraAdvanceTimer);incidentCameraAdvanceTimer=0;document.getElementById('incidentCameraFloatingLayer')?.querySelector('video')?.pause();document.getElementById('incidentCameraLinks').innerHTML='';}
+   if(S.step===4||SP.o!==SCENES.disaster){clearTimeout(incidentCameraAdvanceTimer);incidentCameraAdvanceTimer=0;const tile=document.querySelector('#incidentCameraFloatingLayer .incident-monitor-float');if(tile)tile.style.visibility='hidden';document.getElementById('incidentCameraFloatingLayer')?.querySelector('video')?.pause();document.getElementById('incidentCameraLinks').innerHTML='';}
   return;
  }
  const layer=document.getElementById('incidentCameraFloatingLayer'),video=layer?.querySelector('video'),items=incidentCameraItems();
@@ -1521,8 +1611,8 @@ function setRouteIncidentCameraReady(ready){
    if(current>=0)initialIndex=current;
   }
   renderIncidentMonitorGrid(initialIndex);a.routeCameraStarted=true;a.routeCameraStep=S.step;
- }else if(incidentCameraSelected<0||!video?.src)selectIncidentCamera(0);
- else if(!S.paused&&video.paused)video.play().then(()=>{activateRouteRolloverAfterVideo(items[incidentCameraSelected]);scheduleIncidentCameraAdvance(incidentCameraVisibleDuration());}).catch(()=>{});
+  }else if(incidentCameraSelected<0||incidentCameraSelected>=items.length||!video?.src)selectIncidentCamera(0);
+ else if(!S.paused&&video.paused){const item=items[incidentCameraSelected],focus=active?focusRouteIncidentCamera(item?.cameraKey==='truck-rollover'?'accident':'hazards',a):Promise.resolve();video.play().then(()=>Promise.resolve(focus).then(()=>{activateRouteRolloverAfterVideo(item);if(!a.routeCameraManual)scheduleIncidentCameraAdvance(incidentCameraVisibleDuration());})).catch(()=>{});}
  openIncidentCameraLinks();
  scheduleIncidentCameraConnectors();
 }
@@ -1534,6 +1624,8 @@ function selectIncidentCamera(index){
  const item=items[incidentCameraSelected],layer=document.getElementById('incidentCameraFloatingLayer');
  const tile=layer.querySelector('.incident-monitor-float'),video=tile?.querySelector('video'),retry=tile?.querySelector('.incident-camera-link-button');
  if(!tile||!video||!retry)return;
+ const routeManual=routeContext&&!!S.logistics?.routeCameraManual;
+ const cameraFocus=routeContext?focusRouteIncidentCamera(item?.cameraKey==='truck-rollover'?'accident':'hazards'):Promise.resolve();
  const cameraIndex=incidentCameraSelected;
  clearTimeout(incidentCameraAdvanceTimer);incidentCameraAdvanceTimer=0;
  tile.dataset.index=String(incidentCameraSelected);tile.style.setProperty('--camera-color',incidentCameraItemColor(item,incidentCameraSelected));
@@ -1543,16 +1635,18 @@ function selectIncidentCamera(index){
  video.pause();video.onerror=null;video.onended=null;video.src=item.src;video.muted=true;video.defaultMuted=true;video.loop=false;
  video.playbackRate=simulationVideoRate(video);video.defaultPlaybackRate=simulationVideoRate(video);
  video.setAttribute('aria-label',item.cap);retry.hidden=true;retry.textContent='点击重试播放';video.load();
- video.onended=()=>{if(incidentCameraSelected===cameraIndex&&!S.paused&&incidentCameraContextActive())selectIncidentCamera(cameraIndex+1);};
+ video.onended=()=>{if(incidentCameraSelected===cameraIndex&&!routeManual&&!S.paused&&incidentCameraContextActive())selectIncidentCamera(cameraIndex+1);};
  video.onerror=()=>{
   if(incidentCameraSelected!==cameraIndex)return;
-  retry.hidden=false;retry.textContent='监控流不可用 · 点击重试';scheduleIncidentCameraAdvance(4500/simulationSpeed());
+  retry.hidden=false;retry.textContent='监控流不可用 · 点击重试';if(!routeManual)scheduleIncidentCameraAdvance(4500/simulationSpeed());
  };
- if(!S.paused)video.play().then(()=>{retry.hidden=true;if(incidentCameraSelected===cameraIndex)activateRouteRolloverAfterVideo(item);scheduleIncidentCameraAdvance(incidentCameraVisibleDuration());}).catch(()=>{
+ if(!S.paused)video.play().then(()=>Promise.resolve(cameraFocus).then(()=>{retry.hidden=true;if(incidentCameraSelected===cameraIndex)activateRouteRolloverAfterVideo(item);if(!routeManual)scheduleIncidentCameraAdvance(incidentCameraVisibleDuration());})).catch(()=>{
   if(incidentCameraSelected!==cameraIndex)return;
-  retry.hidden=false;retry.textContent='点击重试播放';scheduleIncidentCameraAdvance(12000/simulationSpeed());
+  retry.hidden=false;retry.textContent='点击重试播放';if(!routeManual)scheduleIncidentCameraAdvance(12000/simulationSpeed());
  });
+ if(!routeManual)scheduleIncidentCameraAdvance(incidentCameraVisibleDuration());
  scheduleIncidentCameraConnectors();
+ return cameraFocus;
 }
 function scheduleIncidentCameraAdvance(delay){
  clearTimeout(incidentCameraAdvanceTimer);
@@ -1629,32 +1723,39 @@ window.addEventListener('resize',scheduleIncidentCameraConnectors,{passive:true}
 Object.assign(ALL[INCIDENT.epic],INCIDENT.coordinates,{name:'沙坝村·曲山镇',siteType:'village'});
 ALL[INCIDENT.epic].gcj=wgs2gcj(INCIDENT.coordinates.lng,INCIDENT.coordinates.lat);
 function incidentResult(){
- // 已安置群众人数以村委会上报为准，作为后续物资保障基数。
+ // 本次演示的已安置人数为事件输入；应急物资清单留待需求收集环节核实。
  const shelteredPeople=INCIDENT.villageReport.shelteredPeople;
  const shelteredPeopleText=shelteredPeople+'人';
  return{shelteredPeople,shelteredPeopleText,
   casualties:'伤亡人数待现场核实，持续跟踪人员安全。',
   roads:'监测发现沙坝村周边山体发生滑坡，村口道路及村内低洼巷道有积水、冲淤，部分路段通行受阻。',
-  exposure:'村委会上报：'+shelteredPeopleText+'已就近安置完成，物资不足需调拨；受灾范围：曲山镇沙坝村。'};
+  exposure:'村委会上报：'+shelteredPeopleText+'已就近安置完成，生活保障物资不足，需紧急调拨；受灾范围：曲山镇沙坝村。'};
 }
 function drawAssessment(){
  const a=S.incident,elapsed=a.elapsed,done=a.complete;
+ const reportAnnounced=done&&a.reportAnnounced;
  const p=Math.min(100,Math.floor(elapsed/INCIDENT.analysisAt*100));
  const result=a.result||incidentResult();
  const rows=[
   {label:'人员伤亡情况',at:11,value:result.casualties},
   {label:'被淹没道路及街道',at:15,value:result.roads},
-  {label:'村委会上报安置情况及物资需求',at:19,value:result.exposure}
+  {label:'应急物资情况',at:19,value:result.exposure}
  ];
  const card=document.getElementById('assessmentCard');
  card.classList.toggle('show',a.shown);card.classList.toggle('complete',done);
  card.innerHTML='<div class="assessment-head"><span>收到报警，开始灾情辅助分析</span><span class="assessment-status">'+(done?'分析完成':'计算中')+'</span></div>'
   +'<div class="assessment-sub">'+INCIDENT.location+'<br>山体滑坡、内涝 · 道路积水与损毁</div>'
-  +'<div class="assessment-monitoring">分析依据：现场监控、灾情监测及村委会现场报告</div>'
-  +(done?'<div class="assessment-result"><small>灾情辅助分析结果</small><strong>需紧急调拨应急物资</strong><span class="assessment-estimate">曲山镇沙坝村 · '+result.shelteredPeopleText+'已就近安置</span><span>村委会上报生活保障物资不足，建议立即启动应急物资调拨。</span></div>':'')
-  +rows.map(row=>{const ready=done||elapsed>=row.at;return'<div class="assessment-row '+(ready?'ready':'pending')+'"><div class="assessment-row-head"><span>'+row.label+'</span><span class="assessment-row-state">'+(ready?'已汇总':'计算中')+'</span></div><div class="assessment-value">'+(ready?row.value:'正在分析监控画面与区域暴露情况')+'</div></div>';}).join('')
+  +'<div class="assessment-monitoring">分析依据：现场监控、灾情监测及应急物资情况分析</div>'
+  +(reportAnnounced?'<div class="assessment-result"><small>灾情辅助分析结果</small><strong>需紧急调拨应急物资</strong><span class="assessment-estimate">村委会上报：'+result.shelteredPeopleText+'已就近安置</span><span>生活保障物资不足，建议立即启动应急物资调拨。</span></div>':'')
+  +rows.map(row=>{const ready=done||elapsed>=row.at,awaitingCollection=row.label==='应急物资情况'&&!reportAnnounced;const state=awaitingCollection?(done?'待村委会上报':'待需求收集'):ready?'已汇总':'计算中';const value=awaitingCollection?(done?'村委会上报信息将在播报时同步显示。':'需求清单将在后续环节核验。'):ready?row.value:'正在分析监控画面与区域暴露情况';return'<div class="assessment-row '+(awaitingCollection?'pending':ready?'ready':'pending')+'"><div class="assessment-row-head"><span>'+row.label+'</span><span class="assessment-row-state">'+state+'</span></div><div class="assessment-value">'+value+'</div></div>';}).join('')
   +'<div class="assessment-progress"><i style="width:'+p+'%"></i></div><div class="assessment-meta"><span>'+(done?'分析结果已汇总':'监控识别 · 道路分析 · 影响范围分析')+'</span><span>'+p+'%</span></div>'
-  +'<div class="assessment-note">96人已就近安置完成；村委会上报物资不足，需要调拨。</div>';
+  +'<div class="assessment-note">'+(reportAnnounced?result.shelteredPeopleText+'已就近安置完成；村委会上报生活保障物资不足，需要调拨。':done?'灾情辅助分析完成，等待村委会上报播报。':'正在分析灾情影响与应急物资情况。')+'</div>';
+}
+function revealIncidentReport(){
+ const a=S.incident;
+ if(!a.complete||a.reportAnnounced)return;
+ a.reportAnnounced=true;
+ drawAssessment();
 }
 function beginIncident(){
  const a=S.incident;
@@ -1677,14 +1778,16 @@ function incidentTick(){
   document.getElementById('incidentBanner').classList.add('complete');
   document.getElementById('incidentEyebrow').textContent='灾情辅助分析完成 · 持续监测中';
   document.getElementById('incidentTitle').textContent='曲山镇沙坝村山体滑坡、内涝灾害';
-  document.getElementById('incidentDescription').textContent='村委会上报：'+a.result.shelteredPeopleText+'已就近安置完成，物资不足需要调拨。';
-  document.getElementById('mapStage').textContent='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
-  setBusy('CMD',false);S.curCmd.CMD='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
-  addLog('back','市级应急指挥系统','灾情辅助分析完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>');
-  speak(INCIDENT.villageReport.source+'上报，'+a.result.shelteredPeopleText+'已就近安置完成，当前物资不足，需要调拨。',true);
+  document.getElementById('incidentDescription').textContent='村委会上报：'+a.result.shelteredPeopleText+'已就近安置完成，生活保障物资不足，需紧急调拨。';
+  document.getElementById('mapStage').textContent='沙坝村 · 村委会上报物资不足，需紧急调拨';
+  setBusy('CMD',false);S.curCmd.CMD='沙坝村 · 村委会上报物资不足，需紧急调拨';
+  addLog('back','市级应急指挥系统','灾情辅助分析完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、生活保障物资不足需紧急调拨</b>');
 
   VIEW.focus(INCIDENT.epic);
   renderPanels();drawKpis();updateClock();
+  drawAssessment();
+  const reportSpeech=speak(INCIDENT.villageReport.source+'上报，'+a.result.shelteredPeopleText+'已就近安置完成，生活保障物资不足，需紧急调拨。',true,revealIncidentReport);
+  if(!reportSpeech)revealIncidentReport();
  }
  if(a.shown)drawAssessment();
  const speechBusy=('speechSynthesis' in window&&(speechSynthesis.speaking||speechSynthesis.pending))||emphasisAudioBusy();
@@ -1803,7 +1906,7 @@ function applyNodeStates(){
 /* ============ 步骤定义（10步） ============ */
 const STEP_DEFS=[
   {active:['CMD'],busy:[['CMD','山体滑坡、内涝灾情辅助分析中']],
-   logs:[['down','市级应急指挥系统','实时监测触发：<b>北川曲山镇沙坝村山体滑坡、内涝灾害</b>，调取现场监控并接收村委会现场报告，核查受灾范围与道路受损情况']],
+   logs:[['down','市级应急指挥系统','实时监测触发：<b>北川曲山镇沙坝村山体滑坡、内涝灾害</b>，调取现场监控，分析受灾范围、道路受损情况及应急物资保障需求']],
    focus:()=>S.cfg.epic,
    calc:()=>{buildScenario();applyNodeStates();beginIncident();}},
   {active:['WH'],busy:[['WH','核对村委会上报物资清单']],
@@ -1991,7 +2094,7 @@ function start(){
  }
  else if(S.step<9){
   S.paused=!S.paused;
-  if('speechSynthesis' in window){try{if(S.paused)speechSynthesis.pause();else speechSynthesis.resume();}catch(e){}}
+  if('speechSynthesis' in window){try{if(S.paused){cancelSpeechResumeRecovery();speechSynthesis.pause();}else resumeSpeechPlayback();}catch(e){}}
   pauseEmphasisAudio(S.paused);
     if(S.step===0)setIncidentPaused(S.paused);
     else if(S.step<=6&&S.logistics){S.logistics.lastTick=performance.now();drawLogisticsCalculation();}
@@ -2007,11 +2110,12 @@ function jumpAct(targetAct){
   const a=S.incident;
   clearInterval(a.timer);a.timer=null;
   cancelEmphasisAudio();
+  cancelSpeechResumeRecovery();
   if('speechSynthesis' in window){speechSynthesis.cancel();speechSynthesis.resume();}
   if(!a.complete){
-   a.elapsed=Math.max(a.elapsed,INCIDENT.analysisAt);a.complete=true;a.result=incidentResult();
-   setBusy('CMD',false);S.curCmd.CMD='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 物资申请调拨';
-   addLog('back','市级应急指挥系统','灾情辅助分析完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、物资不足需要调拨</b>');
+   a.elapsed=Math.max(a.elapsed,INCIDENT.analysisAt);a.complete=true;a.reportAnnounced=true;a.result=incidentResult();
+   setBusy('CMD',false);S.curCmd.CMD='沙坝村 · '+a.result.shelteredPeopleText+'已就近安置 · 村委会上报物资不足需调拨';
+   addLog('back','市级应急指挥系统','灾情辅助分析完成：受灾范围为<b>曲山镇沙坝村</b>；'+INCIDENT.villageReport.source+'上报<b>'+a.result.shelteredPeopleText+'已就近安置完成、生活保障物资不足需紧急调拨</b>');
   }
   S.paused=false;enterStep(1);return;
  }
@@ -2023,6 +2127,7 @@ function navigateTimelineStage(delta){
  const completedReview=S.timelineReview&&completedRun;
  const resumeForNavigation=()=>{
   if(S.paused)S.paused=false;
+  cancelSpeechResumeRecovery();
   if('speechSynthesis' in window){speechSynthesis.cancel();speechSynthesis.resume();}
   cancelEmphasisAudio();pauseEmphasisAudio(false);
   if(S.logistics){S.logistics.narrationPending=false;S.logistics.roadClosureNarrationPending=false;}
@@ -2073,7 +2178,7 @@ function navigateTimelineStage(delta){
  }
  if(S.step<1||S.step>6)return; // 运输、签收和结束由实际任务状态推进
  if(delta>0&&S.step===4){
-   if(!completedReview&&(!S.logistics?.initialRoutesResolved||!S.logistics?.planned||!S.logistics?.roadRoutesResolved||!S.logistics?.roadClosurePromptReady||!S.logistics?.routeRolloverActivated||S.logistics?.routeCauseNarrationPending||S.logistics?.routeCoordinationNarrationPending||routeRevealHoldActive(S.logistics)))return;
+    if(!completedReview&&(!S.logistics?.initialRoutesResolved||!S.logistics?.planned||!S.logistics?.roadRoutesResolved||!S.logistics?.roadClosurePromptReady||!S.logistics?.routeRolloverActivated||!S.logistics?.routeAnalysisSequenceComplete||S.logistics?.routeAnalysisSequenceRunning||S.logistics?.routeCauseNarrationPending||S.logistics?.routeCoordinationNarrationPending||routeRevealHoldActive(S.logistics)))return;
   resumeForNavigation();
   if(S.timelineReview&&S.logistics?.confirmedStages.has(5)){enterStep(6,{review:true});return;}
   if(S.logistics?.confirmedStages.has(5)){enterStep(6);return;}
@@ -2086,7 +2191,7 @@ function navigateTimelineStage(delta){
  if(target<0||target>6&&!(target===7&&(mayEnterTransport||S.timelineReview&&target===7)))return;
  resumeForNavigation();
  if(S.logistics)S.logistics.lastTick=performance.now();
- if(delta>0&&S.step===4&&(!S.logistics?.planned||!S.logistics?.roadRoutesResolved||!S.logistics?.roadClosurePromptReady||!S.logistics?.routeRolloverActivated||S.logistics?.routeCauseNarrationPending||S.logistics?.routeCoordinationNarrationPending||routeRevealHoldActive(S.logistics))&&!completedReview)return;
+  if(delta>0&&S.step===4&&(!S.logistics?.planned||!S.logistics?.roadRoutesResolved||!S.logistics?.roadClosurePromptReady||!S.logistics?.routeRolloverActivated||!S.logistics?.routeAnalysisSequenceComplete||S.logistics?.routeAnalysisSequenceRunning||S.logistics?.routeCauseNarrationPending||S.logistics?.routeCoordinationNarrationPending||routeRevealHoldActive(S.logistics))&&!completedReview)return;
  if(delta>0&&[1,3,5].includes(S.step)&&!S.logistics?.confirmedStages.has(S.step)&&!completedReview){
   const a=S.logistics;if(!a||a.confirmationPending===S.step)return;
   if('speechSynthesis' in window)speechSynthesis.cancel();cancelEmphasisAudio();
@@ -2102,7 +2207,7 @@ function navigateTimelineStage(delta){
 /* ============ 实景场景定义（占位，用户提供素材后替换） ============ */
 const SCENES={
   disaster:{tag:'现场监控',title:'曲山镇沙坝村监控',desc:'',media:INCIDENT.media},
- demand:{tag:'物资需求',title:'集中安置点与受灾群众',desc:'受灾群众已就近安置，村委会上报生活保障物资不足并提出调拨需求。',sceneKey:'集中安置点/受灾群众',
+ demand:{tag:'物资需求',title:'集中安置点与受灾群众',desc:'受灾群众已就近安置，应急物资情况待核实，需求清单将在后续环节收集。',sceneKey:'集中安置点/受灾群众',
   want:'图片 2-3 张',media:[]},
  warehouse:{tag:'仓库管理方',title:'应急储备库与物资堆码',desc:'储备库按品类堆放，接调度指令后快速盘点、拣选、出库。',sceneKey:'储备库/货架/物资堆码',
   want:'图片 2-3 张',media:[]},
@@ -2122,6 +2227,26 @@ const SCENES={
 
 /* ============ 配音 ============ */
 const activeSpeechUtterances=new Set();
+let speechResumeRecoveryToken=0,speechResumeRecoveryTimer=0;
+function cancelSpeechResumeRecovery(){
+ speechResumeRecoveryToken++;
+ if(speechResumeRecoveryTimer){clearTimeout(speechResumeRecoveryTimer);speechResumeRecoveryTimer=0;}
+}
+function resumeSpeechPlayback(){
+ if(!('speechSynthesis' in window))return;
+ const synth=window.speechSynthesis,token=++speechResumeRecoveryToken;
+ if(speechResumeRecoveryTimer){clearTimeout(speechResumeRecoveryTimer);speechResumeRecoveryTimer=0;}
+ try{synth.resume();}catch(e){}
+ let attempts=0;
+ const retry=()=>{
+  speechResumeRecoveryTimer=0;
+  if(token!==speechResumeRecoveryToken||S.paused)return;
+  if(!activeSpeechUtterances.size&&!synth.speaking&&!synth.pending)return;
+  try{synth.resume();}catch(e){}
+  if(++attempts<12)speechResumeRecoveryTimer=setTimeout(retry,180);
+ };
+ speechResumeRecoveryTimer=setTimeout(retry,100);
+}
 function mandarinVoiceRank(voice){
  const lang=String(voice?.lang||'').toLowerCase().replace(/_/g,'-');
  if(/^zh-(cn|hans-cn)(-|$)/.test(lang))return 0;
@@ -2157,7 +2282,7 @@ function pauseEmphasisAudio(paused){
  if(paused)emphasisAudio.pause();
  else if(emphasisAudio._started)emphasisAudio.play().catch(()=>{});
 }
-function speak(text,queue=false){
+function speak(text,queue=false,onStart=null){
  if(S.muted)return null;
  if('speechSynthesis' in window){
   try{
@@ -2167,9 +2292,11 @@ function speak(text,queue=false){
    const vs=mandarinVoices();
    const natural=vs.find(v=>/(natural|neural)/i.test(v.name));
    if(natural||vs.length)u.voice=natural||vs[0];
+   if(onStart){u.addEventListener('start',onStart,{once:true});u.addEventListener('error',onStart,{once:true});}
    if(!queue)speechSynthesis.cancel();
-   if(speechSynthesis.paused&&!S.paused)speechSynthesis.resume();
-   trackSpeechUtterance(u,baseRate);speechSynthesis.speak(u);return u;
+   trackSpeechUtterance(u,baseRate);speechSynthesis.speak(u);
+   if(speechSynthesis.paused&&!S.paused)resumeSpeechPlayback();
+   return u;
   }catch(e){}
  }
  return null;
@@ -2187,8 +2314,9 @@ function speakEmphasisBrowser(text,queue=true){
   u.lang='zh-CN';u.rate=simulationVoiceRate();u.pitch=1;u.volume=1;
   if(alternate)u.voice=alternate;else if(primary)u.voice=primary;
   if(!queue)speechSynthesis.cancel();
-  if(speechSynthesis.paused&&!S.paused)speechSynthesis.resume();
-  trackSpeechUtterance(u,1);speechSynthesis.speak(u);return u;
+  trackSpeechUtterance(u,1);speechSynthesis.speak(u);
+  if(speechSynthesis.paused&&!S.paused)resumeSpeechPlayback();
+  return u;
   }catch(e){}
  }
  return null;
@@ -2260,7 +2388,7 @@ function drawCtl(){
  const completedRun=S.tasks.length>0&&S.tasks.every(t=>t.status==='done');
  const completedReview=S.timelineReview&&completedRun;
    const routeRevealHold=S.step===4&&routeRevealHoldActive(S.logistics)&&!completedReview;
-   const nextWaitsForInitialRoutes=S.step===4&&(!S.logistics?.initialRoutesResolved||!S.logistics?.planned||!S.logistics?.roadRoutesResolved||!S.logistics?.roadClosurePromptReady||!S.logistics?.routeRolloverActivated||S.logistics?.routeCauseNarrationPending||S.logistics?.routeCoordinationNarrationPending||routeRevealHold)&&!completedReview;
+    const nextWaitsForInitialRoutes=S.step===4&&(!S.logistics?.initialRoutesResolved||!S.logistics?.planned||!S.logistics?.roadRoutesResolved||!S.logistics?.roadClosurePromptReady||!S.logistics?.routeRolloverActivated||!S.logistics?.routeAnalysisSequenceComplete||S.logistics?.routeAnalysisSequenceRunning||S.logistics?.routeCauseNarrationPending||S.logistics?.routeCoordinationNarrationPending||routeRevealHold)&&!completedReview;
   const nextWaitsForRoads=false;
  const nextWaitsForTasks=S.step===6&&!S.logistics?.tasksBuilt&&!completedReview;
  const completedTimeline=S.step>=7&&S.tasks.length>0&&S.tasks.every(t=>t.status==='done');
@@ -2380,12 +2508,13 @@ function reset(){
  clearTimeout(S.introTimer);clearTimeout(S.stepTimer);clearInterval(S.transportTimer);
  S.introTimer=S.stepTimer=S.transportTimer=null;
  cancelEmphasisAudio();
+ cancelSpeechResumeRecovery();
  if('speechSynthesis' in window){speechSynthesis.cancel();speechSynthesis.resume();}
   if(transportRenderFrame)cancelAnimationFrame(transportRenderFrame);
   transportRenderFrame=0;
   S.started=false;S.phase=0;S.step=0;S.sim=0;S.simRender=0;S.paused=false;S.timelineReview=false;S.autoConfirm=false;S.reviewTransportSim=null;
   S.cfg.type=INCIDENT.type;S.cfg.epic=INCIDENT.epic;
-  S.incident={timer:null,elapsed:0,lastTick:0,videoShown:false,shown:false,complete:false,result:null,cameraSeen:[],
+  S.incident={timer:null,elapsed:0,lastTick:0,videoShown:false,shown:false,complete:false,reportAnnounced:false,result:null,cameraSeen:[],
    focusRequested:false,mapFocusReady:false};
   document.getElementById('incidentBanner').classList.remove('complete');
   document.getElementById('incidentEyebrow').textContent='突发灾情警报 · 实时监测触发';
@@ -2439,7 +2568,7 @@ document.addEventListener('click',e=>{
   muteButton.classList.toggle('muted',S.muted);
   muteButton.title=S.muted?'开启声音':'关闭声音';
   muteButton.setAttribute('aria-label',muteButton.title);
-  if(S.muted){cancelEmphasisAudio();if('speechSynthesis' in window)speechSynthesis.cancel();}}
+  if(S.muted){cancelEmphasisAudio();cancelSpeechResumeRecovery();if('speechSynthesis' in window)speechSynthesis.cancel();}}
 });
 document.addEventListener('change',e=>{
  if(e.target.matches('#autoConfirmToggle')){S.autoConfirm=e.target.checked;drawCtl();}
